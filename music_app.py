@@ -59,6 +59,10 @@ def init_db():
     ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT TRUE
     """)
 
+    c.execute("CREATE INDEX IF NOT EXISTS idx_music_title ON music(title)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_music_artist ON music(artist)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_music_user ON music(username)")
+
     conn.commit()
     conn.close()
 
@@ -266,11 +270,13 @@ def load_public_music():
     c = conn.cursor(cursor_factory=RealDictCursor)
 
     c.execute("""
-        SELECT m.*
+        SELECT DISTINCT ON (m.title, m.artist, m.key, m.bpm, m.chorus_key, m.chorus_chords_raw)
+            m.*
         FROM music m
         JOIN users u ON m.username = u.username
         WHERE u.is_public = TRUE
         AND m.username != %s
+        ORDER BY m.title, m.artist
     """, (st.session_state.user,))
 
     rows = c.fetchall()
@@ -1550,7 +1556,7 @@ elif menu == "🌍 公開曲を見る":
                 "artist": song["artist"],
                 "genre": song["genre"],
                 "themes": song["themes"].split(",") if song["themes"] else [],
-                "rating": 3,
+                "rating": 0,
                 "comment": "",
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
                 "key": song["key"],
@@ -1572,6 +1578,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
