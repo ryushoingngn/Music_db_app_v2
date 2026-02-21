@@ -1497,14 +1497,13 @@ elif menu == "🌍 公開曲を見る":
 
         st.subheader(f"🎵 {song['title']}")
         st.write(f"Artist: {song['artist']}")
-        st.write(f"登録者: {song['username']}")
+        
 
         if st.button(f"この曲を保存", key=f"copy_{song['id']}"):
 
             # 重複チェック
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
-                st.stop()
 
             new_music = {
                 "title": song["title"],
@@ -1534,6 +1533,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
