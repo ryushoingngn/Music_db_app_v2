@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import psycopg2
 import random
 from datetime import datetime
 import sqlite3
@@ -1433,4 +1434,5 @@ elif menu == "ランダム再発見":
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
+
     st.write("")  # 何もしない（Render用ダミー）
