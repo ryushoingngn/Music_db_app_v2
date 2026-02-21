@@ -3,7 +3,6 @@ import os
 import psycopg2
 import random
 from datetime import datetime
-import sqlite3
 
 st.set_page_config(
     page_title="My Music Database",
@@ -11,19 +10,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-DB_PATH = os.environ.get("DB_PATH", "music.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def get_connection():
+    return psycopg2.connect(DATABASE_URL)
 
 # ======================
 # 🗄 SQLite初期化
 # ======================
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS music (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT,
         title TEXT,
         artist TEXT,
@@ -70,7 +72,7 @@ import hashlib
 # ======================
 
 def load_users():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT username, password FROM users")
     rows = c.fetchall()
@@ -78,7 +80,7 @@ def load_users():
     return {r[0]: r[1] for r in rows}
 
 def save_users(users):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
 
     c.execute("DELETE FROM users")
@@ -161,11 +163,10 @@ if MULTI_USER_MODE:
 # データ処理
 # ======================
 def load_music():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = get_connection()
     c = conn.cursor()
 
-    c.execute("SELECT * FROM music WHERE username = ?", (st.session_state.user,))
+    c.execute("SELECT * FROM music WHERE username = %s", (st.session_state.user,))
     rows = c.fetchall()
     conn.close()
 
@@ -192,10 +193,10 @@ def load_music():
     return result
 
 def save_music(data):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
 
-    c.execute("DELETE FROM music WHERE username = ?", (st.session_state.user,))
+    c.execute("DELETE FROM music WHERE username = %s", (st.session_state.user,))
 
     for m in data:
         c.execute("""
@@ -204,7 +205,7 @@ def save_music(data):
             title, artist, genre, themes, rating, comment,
             date_added, key, bpm, vocal_min, vocal_max,
             modulations, chorus_key, chorus_chords_raw, chorus_chords_roman
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             st.session_state.user,
             m["title"],
@@ -1436,3 +1437,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
