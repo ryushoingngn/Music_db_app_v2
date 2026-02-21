@@ -49,8 +49,14 @@ def init_db():
     c.execute("""
     CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
-        password TEXT
+        password TEXT,
+        is_public BOOLEAN DEFAULT TRUE
     )
+    """)
+
+    c.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT TRUE
     """)
 
     conn.commit()
@@ -152,6 +158,26 @@ if MULTI_USER_MODE:
     # ---------- ログイン後 ----------
     st.sidebar.write(f"👤 {st.session_state.user}")
 
+    # ===== 公開設定 =====
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT is_public FROM users WHERE username = %s", (st.session_state.user,))
+    current_public = c.fetchone()[0]
+    conn.close()
+    
+    new_public = st.sidebar.checkbox("公開アカウントにする", value=current_public)
+    
+    if new_public != current_public:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute(
+            "UPDATE users SET is_public = %s WHERE username = %s",
+            (new_public, st.session_state.user)
+        )
+        conn.commit()
+        conn.close()
+        st.sidebar.success("公開設定を更新しました")
+    
     if st.sidebar.button("ログアウト"):
         st.session_state.user = None
         if "music_data" in st.session_state:
@@ -234,6 +260,23 @@ if "music_data" not in st.session_state:
     st.session_state.music_data = load_music()
 
 data = st.session_state.music_data
+
+def load_public_music():
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
+
+    c.execute("""
+        SELECT m.*
+        FROM music m
+        JOIN users u ON m.username = u.username
+        WHERE u.is_public = TRUE
+        AND m.username != %s
+    """, (st.session_state.user,))
+
+    rows = c.fetchall()
+    conn.close()
+
+    return rows
 
 # ======================
 # ⭐ キャッシュ（大量データ高速化）
@@ -812,7 +855,7 @@ if "next_menu" in st.session_state:
 
 menu = st.sidebar.selectbox(
     "メニュー",
-    ["🏠 ホーム", "曲追加", "アーティスト一覧", "ジャンル一覧", "検索", "年別まとめ", "ランダム再発見"],
+    ["🏠 ホーム", "曲追加", "アーティスト一覧", "ジャンル一覧", "検索", "年別まとめ", "ランダム再発見", "🌍 公開曲を見る"],
     key="menu"
 )
 
@@ -1434,10 +1477,64 @@ elif menu == "ランダム再発見":
         st.write("★"*int(m["rating"]))
         st.write(m["comment"])
 
+
+# ======================
+# 公開曲
+# ======================
+
+
+elif menu == "🌍 公開曲を見る":
+
+    st.header("🌍 公開されている曲")
+
+    public_songs = load_public_music()
+
+    if len(public_songs) == 0:
+        st.info("公開曲はまだありません")
+        st.stop()
+
+    for song in public_songs:
+
+        st.subheader(f"🎵 {song['title']}")
+        st.write(f"Artist: {song['artist']}")
+        st.write(f"登録者: {song['username']}")
+
+        if st.button(f"この曲を保存", key=f"copy_{song['id']}"):
+
+            # 重複チェック
+            if is_duplicate_song(song["title"], song["artist"]):
+                st.warning("すでに登録済みです")
+                st.stop()
+
+            new_music = {
+                "title": song["title"],
+                "artist": song["artist"],
+                "genre": song["genre"],
+                "themes": song["themes"].split(",") if song["themes"] else [],
+                "rating": 3,  # 初期値
+                "comment": "",
+                "date_added": datetime.now().strftime("%Y-%m-%d"),
+                "key": song["key"],
+                "bpm": song["bpm"],
+                "vocal_min": song["vocal_min"],
+                "vocal_max": song["vocal_max"],
+                "modulations": [],
+                "chorus_key": song["chorus_key"],
+                "chorus_chords_raw": song["chorus_chords_raw"],
+                "chorus_chords_roman": song["chorus_chords_roman"].split(",") if song["chorus_chords_roman"] else [],
+            }
+
+            data.append(new_music)
+            st.session_state.msg = "公開曲を保存しました！"
+            save_and_refresh()
+
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
