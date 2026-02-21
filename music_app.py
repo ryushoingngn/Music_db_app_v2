@@ -86,7 +86,7 @@ def save_users(users):
     c.execute("DELETE FROM users")
 
     for u, p in users.items():
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (u, p))
+        c.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (u, p))
 
     conn.commit()
     conn.close()
@@ -1437,4 +1437,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
