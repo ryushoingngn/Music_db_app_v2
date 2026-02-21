@@ -1567,7 +1567,6 @@ elif menu == "🌍 公開曲を見る":
 
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
-                st.stop()
 
             new_music = {
                 "title": song["title"],
@@ -1596,6 +1595,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
