@@ -861,7 +861,7 @@ if "next_menu" in st.session_state:
 
 menu = st.sidebar.selectbox(
     "メニュー",
-    ["🏠 ホーム", "曲追加", "アーティスト一覧", "ジャンル一覧", "検索", "年別まとめ", "ランダム再発見", "🌍 公開曲を見る"],
+    ["🏠 ホーム", "曲追加", "アーティスト一覧", "ジャンル一覧", "検索", "年別まとめ", "🌍 公開曲を見る"],
     key="menu"
 )
 
@@ -933,6 +933,38 @@ if menu == "🏠 ホーム":
             st.session_state.prev_menu = st.session_state.menu
             st.session_state.detail_index = index
             st.rerun()
+
+    
+    st.divider()
+
+    # ======================
+    # 🎲 ランダム再発見（統合版）
+    # ======================
+    st.subheader("🎲 ランダム再発見")
+
+    if "random_pick" not in st.session_state:
+        st.session_state.random_pick = None
+
+    col1, col2 = st.columns([1,3])
+
+    if col1.button("🎲 選ぶ"):
+        st.session_state.random_pick = random.choice(data)
+
+    if st.session_state.random_pick:
+        m = st.session_state.random_pick
+        st.markdown(f"### 🎵 {m['title']}")
+        st.write(f"**Artist:** {m['artist']}")
+        st.write("★" * int(m["rating"]))
+
+        if m.get("comment"):
+            st.write(m["comment"])
+
+        if st.button("詳細を見る"):
+            index = data.index(m)
+            st.session_state.prev_menu = st.session_state.menu
+            st.session_state.detail_index = index
+            st.rerun()
+    
 
 # ======================
 # 曲追加（改良版）
@@ -1468,20 +1500,6 @@ elif menu == "年別まとめ":
 
 
 
-# ======================
-# ランダム再発見
-# ======================
-elif menu == "ランダム再発見":
-    st.header("🎲 今日の再発見")
-
-    if len(data) == 0:
-        st.info("曲がまだありません")
-    elif st.button("選ぶ"):
-        m = random.choice(data)
-        st.subheader(m["title"])
-        st.write("Artist:", m["artist"])
-        st.write("★"*int(m["rating"]))
-        st.write(m["comment"])
 
 
 # ======================
@@ -1578,6 +1596,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
