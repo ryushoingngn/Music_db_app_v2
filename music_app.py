@@ -3,6 +3,7 @@ import os
 import psycopg2
 import random
 from datetime import datetime
+from psycopg2.extras import RealDictCursor
 
 st.set_page_config(
     page_title="My Music Database",
@@ -164,7 +165,7 @@ if MULTI_USER_MODE:
 # ======================
 def load_music():
     conn = get_connection()
-    c = conn.cursor()
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     c.execute("SELECT * FROM music WHERE username = %s", (st.session_state.user,))
     rows = c.fetchall()
@@ -1437,5 +1438,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
