@@ -1555,7 +1555,7 @@ elif menu == "🌍 公開曲を見る":
                 "title": song["title"],
                 "artist": song["artist"],
                 "genre": song["genre"],
-                "themes": song["themes"].split(",") if song["themes"] else [],
+                "themes": [],
                 "rating": 0,
                 "comment": "",
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
@@ -1563,7 +1563,7 @@ elif menu == "🌍 公開曲を見る":
                 "bpm": song["bpm"],
                 "vocal_min": song["vocal_min"],
                 "vocal_max": song["vocal_max"],
-                "modulations": [],
+                "modulations": song["modulations"] if song["modulations"] else [],
                 "chorus_key": song["chorus_key"],
                 "chorus_chords_raw": song["chorus_chords_raw"],
                 "chorus_chords_roman": song["chorus_chords_roman"].split(",") if song["chorus_chords_roman"] else [],
@@ -1578,6 +1578,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
