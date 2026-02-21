@@ -203,6 +203,7 @@ def load_music():
 
     result = []
     for row in rows:
+        st.write("DEBUG:", row["title"], row["modulations"])
         result.append({
             "title": row["title"],
             "artist": row["artist"],
@@ -1595,6 +1596,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
