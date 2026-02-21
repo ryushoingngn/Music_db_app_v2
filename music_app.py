@@ -1482,7 +1482,6 @@ elif menu == "ランダム再発見":
 # 公開曲
 # ======================
 
-
 elif menu == "🌍 公開曲を見る":
 
     st.header("🌍 公開されている曲")
@@ -1493,24 +1492,65 @@ elif menu == "🌍 公開曲を見る":
         st.info("公開曲はまだありません")
         st.stop()
 
+    # ==========================
+    # 🔎 検索欄（NEW）
+    # ==========================
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        search_title = st.text_input("🎵 曲名検索")
+
+    with col2:
+        search_artist = st.text_input("🎤 アーティスト検索")
+
+    # ==========================
+    # 🔎 フィルター処理
+    # ==========================
+
+    filtered_songs = []
+
     for song in public_songs:
+
+        if search_title:
+            if search_title.lower() not in song["title"].lower():
+                continue
+
+        if search_artist:
+            if search_artist.lower() not in song["artist"].lower():
+                continue
+
+        filtered_songs.append(song)
+
+    st.divider()
+
+    if len(filtered_songs) == 0:
+        st.info("該当する曲がありません")
+        st.stop()
+
+    st.write(f"{len(filtered_songs)} 件ヒット")
+
+    # ==========================
+    # 表示
+    # ==========================
+
+    for song in filtered_songs:
 
         st.subheader(f"🎵 {song['title']}")
         st.write(f"Artist: {song['artist']}")
-        
 
         if st.button(f"この曲を保存", key=f"copy_{song['id']}"):
 
-            # 重複チェック
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
+                st.stop()
 
             new_music = {
                 "title": song["title"],
                 "artist": song["artist"],
                 "genre": song["genre"],
                 "themes": song["themes"].split(",") if song["themes"] else [],
-                "rating": 3,  # 初期値
+                "rating": 3,
                 "comment": "",
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
                 "key": song["key"],
@@ -1528,11 +1568,11 @@ elif menu == "🌍 公開曲を見る":
             save_and_refresh()
 
 
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
