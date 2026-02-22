@@ -780,13 +780,14 @@ def edit_form(music, index):
         current_keys = music.get("key", "")
         current_keys_list = [k.strip() for k in current_keys.split(",")] if current_keys else []
         
-        selected_keys = st.multiselect(
-            "Key（複数選択可）",
-            VALID_KEYS,
-            default=[k for k in current_keys_list if k in VALID_KEYS]
+        selected_key = st.selectbox(
+            "Key",
+            [""] + VALID_KEYS,
+            index=([""] + VALID_KEYS).index(current_keys_list[0])
+            if current_keys_list else 0
         )
         
-        key = ", ".join(selected_keys)
+        key = selected_key
         bpm = st.text_input("BPM", music.get("bpm", ""))
 
         st.write("🎤 ボーカル音域")
@@ -1125,12 +1126,12 @@ if menu == "曲追加":
     with st.expander("▼ 詳細入力（任意）"):
         genre_input = st.text_input("ジャンル")
         themes_input = st.text_input("テーマ(カンマ区切り)")
-        selected_keys = st.multiselect(
-            "Key（複数選択可）",
-            VALID_KEYS
+        selected_key = st.selectbox(
+            "Key",
+            [""] + VALID_KEYS
         )
         
-        key = ", ".join(selected_keys)
+        key = selected_key
         bpm = st.text_input("BPM")
 
         st.write("🎤 ボーカル音域")
@@ -1387,9 +1388,9 @@ elif menu == "検索":
             col1, col2 = st.columns(2)
 
             with col1:
-                key_filter = st.multiselect(
+                key_filter = st.selectbox(
                     "🎹 Key",
-                    VALID_KEYS,
+                    [""] + VALID_KEYS,
                     key="search_key"
                 )
 
@@ -1465,8 +1466,7 @@ elif menu == "検索":
         # Key検索
         if key_filter:
             song_keys = [k.strip() for k in m.get("key", "").split(",") if k.strip()]
-        
-            if not any(k in song_keys for k in key_filter):
+            if key_filter not in song_keys:
                 continue
 
         # Genre検索 ⭐追加
@@ -1757,6 +1757,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
