@@ -352,77 +352,6 @@ NOTE_MAP = {
     "B":11
 }
 
-def get_relative_major(key):
-    """
-    Am → C
-    Em → G
-    Dm → F
-    などに変換
-    メジャーならそのまま返す
-    """
-    if not key:
-        return key
-
-    key = key.strip()
-
-    # マイナー判定
-    if key.endswith("m"):
-        root = key[:-1]
-
-        if root not in NOTE_MAP:
-            return key
-
-        # マイナー → +3半音 = 相対長調
-        major_val = (NOTE_MAP[root] + 3) % 12
-
-        # NOTE_MAPから逆引き
-        for k, v in NOTE_MAP.items():
-            if v == major_val and len(k) <= 2:  # C, C#, Db など優先
-                return k
-
-    return key
-
-# ======================
-# 🎹 Key正規化（NEW）
-# ======================
-def normalize_key_string(key_str):
-    """
-    ' C , am ,F# ' → 'C, Am, F#'
-    """
-    if not key_str:
-        return ""
-
-    keys = [k.strip() for k in key_str.split(",") if k.strip()]
-    normalized = []
-
-    for k in keys:
-        k = k.strip()
-
-        # 先頭大文字
-        k = k[0].upper() + k[1:]
-
-        # minor小文字統一（Am, D#m など）
-        if len(k) > 1 and k[1:].lower() == "m":
-            k = k[0] + "m"
-
-        normalized.append(k)
-
-    return ", ".join(normalized)
-
-MAJOR_KEYS = [
-    "C","C#","Db",
-    "D","D#","Eb",
-    "E",
-    "F","F#","Gb",
-    "G","G#","Ab",
-    "A","A#","Bb",
-    "B"
-]
-
-MINOR_KEYS = [k + "m" for k in MAJOR_KEYS]
-
-VALID_KEYS = MAJOR_KEYS + MINOR_KEYS
-
 def note_to_midi(note):
     """
     C4 → 60 みたいな数値に変換
@@ -481,8 +410,6 @@ def chord_to_degree(chord, key):
         return ""
 
     root, ctype = parse_chord(chord)
-
-    key = get_relative_major(key)
     
     if root not in NOTE_MAP or key not in NOTE_MAP:
         return chord
@@ -505,8 +432,6 @@ def convert_progression(raw_text, key):
     """
     if not raw_text.strip() or not key:
         return []
-
-    key = get_relative_major(key)
     
     chords = raw_text.replace(",", " ").split()
     result = []
@@ -569,9 +494,9 @@ def roman_match(song_prog, query_prog):
 
 def validate_song_input(
     title, artist, bpm, vocal_min, vocal_max,
-    modulation_input, date_added,
-    key_input, chorus_key_input
+    modulation_input, date_added
 ):
+
     errors = []
 
     # ======================
@@ -632,20 +557,6 @@ def validate_song_input(
             errors.append("日付は YYYY-MM-DD 形式で入力してください")
 
     return errors
-
-    # ======================
-    # Keyチェック（NEW）
-    # ======================
-    if key_input.strip():
-        keys = [k.strip() for k in key_input.split(",") if k.strip()]
-        for k in keys:
-            if k not in VALID_KEYS:
-                errors.append(f"無効なKeyです: {k}")
-                break
-
-    if chorus_key_input.strip():
-        if chorus_key_input.strip() not in VALID_KEYS:
-            errors.append("サビKeyが正しくありません")
 
 # ======================
 # 🎹 ローマ数字キーボード（2段＋拡張）
@@ -819,14 +730,7 @@ def edit_form(music, index):
         themes_str = ", ".join(music.get("themes", []))
         themes_input = st.text_input("テーマ(カンマ区切り)", themes_str)
 
-        current_keys = music.get("key", "")
-        current_keys_list = [k.strip() for k in current_keys.split(",")] if current_keys else []
-        
-        key = st.text_input(
-            "Key（例：C, Am, F#）",
-            music.get("key", ""),
-            help="メジャーは C, D, F# など。マイナーは Am, D#m など"
-        )
+        key = st.text_input("Key", music.get("key", ""))
         bpm = st.text_input("BPM", music.get("bpm", ""))
 
         st.write("🎤 ボーカル音域")
@@ -847,9 +751,11 @@ def edit_form(music, index):
         )
 
         chorus_key = st.text_input(
-            "サビのキー（例：C, Am）",
+            "サビのキー（ローマ数字変換用）＊マイナーキー未対応",
             music.get("chorus_key", "")
         )
+
+        
 
         raw_chords_str = music.get("chorus_chords_raw", "")
 
@@ -879,9 +785,7 @@ def edit_form(music, index):
         errors = validate_song_input(
             title, artist, bpm, vocal_min, vocal_max,
             modulation_input,
-            date_added,
-            key,
-            chorus_key
+            date_added
         )
         
         if errors:
@@ -892,9 +796,6 @@ def edit_form(music, index):
         raw = chorus_chords_raw.strip()
         roman = convert_progression(raw, chorus_key)
 
-        # ⭐ Key正規化（追加）
-        key = normalize_key_string(key)
-        
         # 更新処理
         data[index] = {
             "title": title,
@@ -1165,10 +1066,8 @@ if menu == "曲追加":
     with st.expander("▼ 詳細入力（任意）"):
         genre_input = st.text_input("ジャンル")
         themes_input = st.text_input("テーマ(カンマ区切り)")
-        key = st.text_input(
-            "Key（例：C, Am, F#）",
-            help="メジャーは C, D, F# など。マイナーは Am, D#m など"
-        )
+        
+        key = st.text_input("Key（例:Cm, F#）")
         bpm = st.text_input("BPM")
 
         st.write("🎤 ボーカル音域")
@@ -1185,10 +1084,9 @@ if menu == "曲追加":
         )
 
         chorus_key = st.text_input(
-            "サビのキー（例：C, Am）",
-            help="メジャーは C, D, F#。マイナーは Am, D#m など"
+            "サビのキー（ローマ数字変換用）",
+            help="ここに入力したキーでコード進行をディグリーネーム変換します"
         )
-
 
         chorus_chords_raw = st.text_input(
             "実コード進行（例：F G E Am）",
@@ -1208,9 +1106,7 @@ if menu == "曲追加":
         errors = validate_song_input(
             title, artist, bpm, vocal_min, vocal_max,
             modulation_input,
-            datetime.now().strftime("%Y-%m-%d"),
-            key,
-            chorus_key
+            datetime.now().strftime("%Y-%m-%d")
         )
         
         if errors:
@@ -1225,9 +1121,6 @@ if menu == "曲追加":
 
         raw = chorus_chords_raw.strip()
         roman = convert_progression(raw, chorus_key)
-
-        # ⭐ Key正規化（追加）
-        key = normalize_key_string(key)
 
         # 登録データ作成
         new_music = {
@@ -1394,7 +1287,7 @@ elif menu == "検索":
     genre_filter = st.session_state.search_genre
     theme_filter = st.session_state.search_theme
     rating_min = st.session_state.search_rating
-    
+    key_filter = st.session_state.search_key
     bpm_min = st.session_state.search_bpm_min
     bpm_max = st.session_state.search_bpm_max
     vocal_mode = st.session_state.search_vocal_mode
@@ -1428,10 +1321,7 @@ elif menu == "検索":
             col1, col2 = st.columns(2)
 
             with col1:
-                key_filter = st.text_input(
-                    "🎹 Keyフィルター（例：C, Am）",
-                    key="search_key"
-                )
+                key_filter = st.text_input("🎹 Key", key="search_key")
 
             with col2:
                 st.write("⏱ BPM")
@@ -1504,8 +1394,7 @@ elif menu == "検索":
 
         # Key検索
         if key_filter:
-            song_keys = [k.strip() for k in m.get("key", "").split(",") if k.strip()]
-            if key_filter not in song_keys:
+            if key_filter.lower() not in m.get("key", "").lower():
                 continue
 
         # Genre検索 ⭐追加
@@ -1768,9 +1657,6 @@ elif menu == "🌍 公開曲を見る":
 
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
-
-            # ⭐ Key正規化
-            normalized_key = normalize_key_string(song["key"])
             
             new_music = {
                 "title": song["title"],
@@ -1780,7 +1666,7 @@ elif menu == "🌍 公開曲を見る":
                 "rating": 0,
                 "comment": "",
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
-                "key": normalized_key,
+                "key": song["key"],
                 "bpm": song["bpm"],
                 "vocal_min": song["vocal_min"],
                 "vocal_max": song["vocal_max"],
@@ -1799,6 +1685,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
