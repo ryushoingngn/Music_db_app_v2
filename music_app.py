@@ -1309,11 +1309,7 @@ elif menu == "検索":
     genre_filter = st.session_state.search_genre
     theme_filter = st.session_state.search_theme
     rating_min = st.session_state.search_rating
-    key_filter = st.selectbox(
-        "🎹 Key",
-        [""] + VALID_KEYS,
-        key="search_key"
-    )
+    
     bpm_min = st.session_state.search_bpm_min
     bpm_max = st.session_state.search_bpm_max
     vocal_mode = st.session_state.search_vocal_mode
@@ -1347,7 +1343,11 @@ elif menu == "検索":
             col1, col2 = st.columns(2)
 
             with col1:
-                key_filter = st.text_input("🎹 Key", key="search_key")
+                key_filter = st.selectbox(
+                    "🎹 Key",
+                    [""] + VALID_KEYS,
+                    key="search_key"
+                )
 
             with col2:
                 st.write("⏱ BPM")
@@ -1711,6 +1711,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
