@@ -352,6 +352,15 @@ NOTE_MAP = {
     "B":11
 }
 
+VALID_KEYS = [
+    "C","C#","Db",
+    "D","D#","Eb",
+    "E",
+    "F","F#","Gb",
+    "G","G#","Ab",
+    "A","A#","Bb",
+    "B"
+]
 def note_to_midi(note):
     """
     C4 → 60 みたいな数値に変換
@@ -729,7 +738,13 @@ def edit_form(music, index):
         themes_str = ", ".join(music.get("themes", []))
         themes_input = st.text_input("テーマ(カンマ区切り)", themes_str)
 
-        key = st.text_input("Key", music.get("key", ""))
+        current_key = music.get("key", "")
+        key = st.selectbox(
+            "Key",
+            [""] + VALID_KEYS,
+            index=([""] + VALID_KEYS).index(current_key)
+            if current_key in VALID_KEYS else 0
+        )
         bpm = st.text_input("BPM", music.get("bpm", ""))
 
         st.write("🎤 ボーカル音域")
@@ -749,9 +764,12 @@ def edit_form(music, index):
             mods_str
         )
 
-        chorus_key = st.text_input(
-            "サビのキー（ローマ数字変換用）＊マイナーキー未対応",
-            music.get("chorus_key", "")
+        current_chorus_key = music.get("chorus_key", "")
+        chorus_key = st.selectbox(
+            "サビのキー（ローマ数字変換用）",
+            [""] + VALID_KEYS,
+            index=([""] + VALID_KEYS).index(current_chorus_key)
+            if current_chorus_key in VALID_KEYS else 0
         )
 
 
@@ -1065,7 +1083,10 @@ if menu == "曲追加":
     with st.expander("▼ 詳細入力（任意）"):
         genre_input = st.text_input("ジャンル")
         themes_input = st.text_input("テーマ(カンマ区切り)")
-        key = st.text_input("Key（例:Cm, F#）")
+        key = st.selectbox(
+            "Key",
+            [""] + VALID_KEYSＷ
+        )
         bpm = st.text_input("BPM")
 
         st.write("🎤 ボーカル音域")
@@ -1081,8 +1102,9 @@ if menu == "曲追加":
             help="半音単位で入力。カンマ区切り"
         )
 
-        chorus_key = st.text_input(
+        chorus_key = st.selectbox(
             "サビのキー（ローマ数字変換用）",
+            [""] + VALID_KEYS
             help="ここに入力したキーでコード進行をディグリーネーム変換します"
         )
 
@@ -1287,7 +1309,11 @@ elif menu == "検索":
     genre_filter = st.session_state.search_genre
     theme_filter = st.session_state.search_theme
     rating_min = st.session_state.search_rating
-    key_filter = st.session_state.search_key
+    key_filter = st.selectbox(
+        "🎹 Key",
+        [""] + VALID_KEYS,
+        key="search_key"
+    )
     bpm_min = st.session_state.search_bpm_min
     bpm_max = st.session_state.search_bpm_max
     vocal_mode = st.session_state.search_vocal_mode
@@ -1685,6 +1711,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
