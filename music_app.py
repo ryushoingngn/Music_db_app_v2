@@ -203,7 +203,16 @@ def load_music():
 
     result = []
     for row in rows:
-        st.write("DEBUG:", row["title"], row["modulations"])
+
+        # ===== modulations安全変換 =====
+        mods = []
+    
+        if row["modulations"]:
+            for x in row["modulations"].split(","):
+                x = x.strip()
+                if x.lstrip("-").isdigit():
+                    mods.append(int(x))
+    
         result.append({
             "title": row["title"],
             "artist": row["artist"],
@@ -216,7 +225,7 @@ def load_music():
             "bpm": row["bpm"],
             "vocal_min": row["vocal_min"],
             "vocal_max": row["vocal_max"],
-            "modulations": [int(x) for x in row["modulations"].split(",")] if row["modulations"] else [],
+            "modulations": mods,   # ← ここ重要
             "chorus_key": row["chorus_key"],
             "chorus_chords_raw": row["chorus_chords_raw"],
             "chorus_chords_roman": row["chorus_chords_roman"].split(",") if row["chorus_chords_roman"] else []
@@ -1581,7 +1590,7 @@ elif menu == "🌍 公開曲を見る":
                 "bpm": song["bpm"],
                 "vocal_min": song["vocal_min"],
                 "vocal_max": song["vocal_max"],
-                "modulations": song["modulations"] if song["modulations"] else [],
+                "modulations": parse_modulations(song["modulations"]) if song["modulations"] else [],
                 "chorus_key": song["chorus_key"],
                 "chorus_chords_raw": song["chorus_chords_raw"],
                 "chorus_chords_roman": song["chorus_chords_roman"].split(",") if song["chorus_chords_roman"] else [],
@@ -1596,6 +1605,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
