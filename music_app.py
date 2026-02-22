@@ -569,7 +569,8 @@ def roman_match(song_prog, query_prog):
 
 def validate_song_input(
     title, artist, bpm, vocal_min, vocal_max,
-    modulation_input, date_added
+    modulation_input, date_added,
+    key_input, chorus_key_input
 ):
     errors = []
 
@@ -631,6 +632,20 @@ def validate_song_input(
             errors.append("日付は YYYY-MM-DD 形式で入力してください")
 
     return errors
+
+    # ======================
+    # Keyチェック（NEW）
+    # ======================
+    if key_input.strip():
+        keys = [k.strip() for k in key_input.split(",") if k.strip()]
+        for k in keys:
+            if k not in VALID_KEYS:
+                errors.append(f"無効なKeyです: {k}")
+                break
+
+    if chorus_key_input.strip():
+        if chorus_key_input.strip() not in VALID_KEYS:
+            errors.append("サビKeyが正しくありません")
 
 # ======================
 # 🎹 ローマ数字キーボード（2段＋拡張）
@@ -831,14 +846,10 @@ def edit_form(music, index):
             mods_str
         )
 
-        current_chorus_key = music.get("chorus_key", "")
-        chorus_key = st.selectbox(
-            "サビのキー（ローマ数字変換用）",
-            [""] + VALID_KEYS,
-            index=([""] + VALID_KEYS).index(current_chorus_key)
-            if current_chorus_key in VALID_KEYS else 0
+        chorus_key = st.text_input(
+            "サビのキー（例：C, Am）",
+            music.get("chorus_key", "")
         )
-
 
         raw_chords_str = music.get("chorus_chords_raw", "")
 
@@ -868,7 +879,9 @@ def edit_form(music, index):
         errors = validate_song_input(
             title, artist, bpm, vocal_min, vocal_max,
             modulation_input,
-            date_added
+            date_added,
+            key,
+            chorus_key
         )
         
         if errors:
@@ -1171,10 +1184,9 @@ if menu == "曲追加":
             help="半音単位で入力。カンマ区切り"
         )
 
-        chorus_key = st.selectbox(
-            "サビのキー（ローマ数字変換用）",
-            [""] + VALID_KEYS,
-            help="ここに入力したキーでコード進行をディグリーネーム変換します"
+        chorus_key = st.text_input(
+            "サビのキー（例：C, Am）",
+            help="メジャーは C, D, F#。マイナーは Am, D#m など"
         )
 
 
@@ -1196,7 +1208,9 @@ if menu == "曲追加":
         errors = validate_song_input(
             title, artist, bpm, vocal_min, vocal_max,
             modulation_input,
-            datetime.now().strftime("%Y-%m-%d")
+            datetime.now().strftime("%Y-%m-%d"),
+            key,
+            chorus_key
         )
         
         if errors:
@@ -1785,6 +1799,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
