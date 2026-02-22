@@ -491,6 +491,72 @@ def roman_match(song_prog, query_prog):
             if i == len(query_prog):
                 return True
     return False
+
+def validate_song_input(
+    title, artist, bpm, vocal_min, vocal_max,
+    modulation_input, date_added
+):
+    errors = []
+
+    # ======================
+    # 必須チェック
+    # ======================
+    if not title.strip():
+        errors.append("曲名は必須です")
+
+    if not artist.strip():
+        errors.append("アーティスト名は必須です")
+
+    # ======================
+    # BPMチェック
+    # ======================
+    if bpm.strip():
+        if not bpm.isdigit():
+            errors.append("BPMは数字で入力してください")
+        else:
+            bpm_val = int(bpm)
+            if bpm_val < 1 or bpm_val > 300:
+                errors.append("BPMは1〜300の範囲で入力してください")
+
+    # ======================
+    # 音域チェック
+    # ======================
+    if vocal_min:
+        if note_to_midi(vocal_min) is None:
+            errors.append("最低音の形式が正しくありません（例：C3）")
+
+    if vocal_max:
+        if note_to_midi(vocal_max) is None:
+            errors.append("最高音の形式が正しくありません（例：A4）")
+
+    if vocal_min and vocal_max:
+        min_midi = note_to_midi(vocal_min)
+        max_midi = note_to_midi(vocal_max)
+        if min_midi and max_midi and min_midi > max_midi:
+            errors.append("最低音が最高音より高くなっています")
+
+    # ======================
+    # 転調チェック
+    # ======================
+    if modulation_input.strip():
+        parts = modulation_input.split(",")
+        for p in parts:
+            p = p.strip().replace("+", "")
+            if not p.lstrip("-").isdigit():
+                errors.append("転調は半音数字で入力してください（例：+2, -3）")
+                break
+
+    # ======================
+    # 日付チェック
+    # ======================
+    if date_added.strip():
+        try:
+            datetime.strptime(date_added, "%Y-%m-%d")
+        except:
+            errors.append("日付は YYYY-MM-DD 形式で入力してください")
+
+    return errors
+
 # ======================
 # 🎹 ローマ数字キーボード（2段＋拡張）
 # ======================
@@ -714,8 +780,15 @@ def edit_form(music, index):
     if st.button("保存"):
 
         # 必須チェック
-        if title.strip() == "" or artist.strip() == "":
-            st.error("曲名とアーティストは必須です")
+        errors = validate_song_input(
+            title, artist, bpm, vocal_min, vocal_max,
+            modulation_input,
+            date_added
+        )
+        
+        if errors:
+            for e in errors:
+                st.error(e)
             st.stop()
 
         raw = chorus_chords_raw.strip()
@@ -1029,8 +1102,15 @@ if menu == "曲追加":
     if st.button("追加"):
 
         # 必須チェック
-        if title.strip() == "" or artist.strip() == "":
-            st.error("曲名とアーティストは必須です")
+        errors = validate_song_input(
+            title, artist, bpm, vocal_min, vocal_max,
+            modulation_input,
+            datetime.now().strftime("%Y-%m-%d")
+        )
+        
+        if errors:
+            for e in errors:
+                st.error(e)
             st.stop()
 
         # 重複チェック
@@ -1605,6 +1685,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
