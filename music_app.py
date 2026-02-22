@@ -1085,7 +1085,7 @@ if menu == "曲追加":
         themes_input = st.text_input("テーマ(カンマ区切り)")
         key = st.selectbox(
             "Key",
-            [""] + VALID_KEYSＷ
+            [""] + VALID_KEYS
         )
         bpm = st.text_input("BPM")
 
@@ -1711,6 +1711,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
