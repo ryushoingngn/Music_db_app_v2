@@ -382,6 +382,33 @@ def get_relative_major(key):
 
     return key
 
+# ======================
+# 🎹 Key正規化（NEW）
+# ======================
+def normalize_key_string(key_str):
+    """
+    ' C , am ,F# ' → 'C, Am, F#'
+    """
+    if not key_str:
+        return ""
+
+    keys = [k.strip() for k in key_str.split(",") if k.strip()]
+    normalized = []
+
+    for k in keys:
+        k = k.strip()
+
+        # 先頭大文字
+        k = k[0].upper() + k[1:]
+
+        # minor小文字統一（Am, D#m など）
+        if len(k) > 1 and k[1:].lower() == "m":
+            k = k[0] + "m"
+
+        normalized.append(k)
+
+    return ", ".join(normalized)
+
 MAJOR_KEYS = [
     "C","C#","Db",
     "D","D#","Eb",
@@ -780,14 +807,11 @@ def edit_form(music, index):
         current_keys = music.get("key", "")
         current_keys_list = [k.strip() for k in current_keys.split(",")] if current_keys else []
         
-        selected_key = st.selectbox(
-            "Key",
-            [""] + VALID_KEYS,
-            index=([""] + VALID_KEYS).index(current_keys_list[0])
-            if current_keys_list else 0
+        key = st.text_input(
+            "Key（例：C, Am, F#）",
+            music.get("key", ""),
+            help="メジャーは C, D, F# など。マイナーは Am, D#m など"
         )
-        
-        key = selected_key
         bpm = st.text_input("BPM", music.get("bpm", ""))
 
         st.write("🎤 ボーカル音域")
@@ -855,7 +879,9 @@ def edit_form(music, index):
         raw = chorus_chords_raw.strip()
         roman = convert_progression(raw, chorus_key)
 
-
+        # ⭐ Key正規化（追加）
+        key = normalize_key_string(key)
+        
         # 更新処理
         data[index] = {
             "title": title,
@@ -1126,12 +1152,10 @@ if menu == "曲追加":
     with st.expander("▼ 詳細入力（任意）"):
         genre_input = st.text_input("ジャンル")
         themes_input = st.text_input("テーマ(カンマ区切り)")
-        selected_key = st.selectbox(
-            "Key",
-            [""] + VALID_KEYS
+        key = st.text_input(
+            "Key（例：C, Am, F#）",
+            help="メジャーは C, D, F# など。マイナーは Am, D#m など"
         )
-        
-        key = selected_key
         bpm = st.text_input("BPM")
 
         st.write("🎤 ボーカル音域")
@@ -1188,6 +1212,8 @@ if menu == "曲追加":
         raw = chorus_chords_raw.strip()
         roman = convert_progression(raw, chorus_key)
 
+        # ⭐ Key正規化（追加）
+        key = normalize_key_string(key)
 
         # 登録データ作成
         new_music = {
@@ -1388,9 +1414,8 @@ elif menu == "検索":
             col1, col2 = st.columns(2)
 
             with col1:
-                key_filter = st.selectbox(
-                    "🎹 Key",
-                    [""] + VALID_KEYS,
+                key_filter = st.text_input(
+                    "🎹 Keyフィルター（例：C, Am）",
                     key="search_key"
                 )
 
@@ -1730,6 +1755,9 @@ elif menu == "🌍 公開曲を見る":
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
 
+            # ⭐ Key正規化
+            normalized_key = normalize_key_string(song["key"])
+            
             new_music = {
                 "title": song["title"],
                 "artist": song["artist"],
@@ -1738,7 +1766,7 @@ elif menu == "🌍 公開曲を見る":
                 "rating": 0,
                 "comment": "",
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
-                "key": song["key"],
+                "key": normalized_key,
                 "bpm": song["bpm"],
                 "vocal_min": song["vocal_min"],
                 "vocal_max": song["vocal_max"],
@@ -1757,6 +1785,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
