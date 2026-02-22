@@ -352,7 +352,37 @@ NOTE_MAP = {
     "B":11
 }
 
-VALID_KEYS = [
+def get_relative_major(key):
+    """
+    Am → C
+    Em → G
+    Dm → F
+    などに変換
+    メジャーならそのまま返す
+    """
+    if not key:
+        return key
+
+    key = key.strip()
+
+    # マイナー判定
+    if key.endswith("m"):
+        root = key[:-1]
+
+        if root not in NOTE_MAP:
+            return key
+
+        # マイナー → +3半音 = 相対長調
+        major_val = (NOTE_MAP[root] + 3) % 12
+
+        # NOTE_MAPから逆引き
+        for k, v in NOTE_MAP.items():
+            if v == major_val and len(k) <= 2:  # C, C#, Db など優先
+                return k
+
+    return key
+
+MAJOR_KEYS = [
     "C","C#","Db",
     "D","D#","Eb",
     "E",
@@ -361,6 +391,11 @@ VALID_KEYS = [
     "A","A#","Bb",
     "B"
 ]
+
+MINOR_KEYS = [k + "m" for k in MAJOR_KEYS]
+
+VALID_KEYS = MAJOR_KEYS + MINOR_KEYS
+
 def note_to_midi(note):
     """
     C4 → 60 みたいな数値に変換
@@ -420,6 +455,8 @@ def chord_to_degree(chord, key):
 
     root, ctype = parse_chord(chord)
 
+    key = get_relative_major(key)
+    
     if root not in NOTE_MAP or key not in NOTE_MAP:
         return chord
 
@@ -442,6 +479,8 @@ def convert_progression(raw_text, key):
     if not raw_text.strip() or not key:
         return []
 
+    key = get_relative_major(key)
+    
     chords = raw_text.replace(",", " ").split()
     result = []
 
@@ -1711,6 +1750,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
