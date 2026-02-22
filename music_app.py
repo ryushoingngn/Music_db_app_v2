@@ -1104,7 +1104,7 @@ if menu == "曲追加":
 
         chorus_key = st.selectbox(
             "サビのキー（ローマ数字変換用）",
-            [""] + VALID_KEYS
+            [""] + VALID_KEYS,
             help="ここに入力したキーでコード進行をディグリーネーム変換します"
         )
 
@@ -1711,6 +1711,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
