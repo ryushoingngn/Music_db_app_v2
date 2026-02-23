@@ -1899,8 +1899,7 @@ elif menu == "🌍 公開曲を見る":
                 "chorus_chords_roman",
                 song,
                 my_song,
-                my_index,
-                is_split=True
+                my_index
             )
         
             compare_list_field(
@@ -1970,6 +1969,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
