@@ -1896,7 +1896,7 @@ elif menu == "🌍 公開曲を見る":
                     "bpm": song["bpm"],
                     "vocal_min": song["vocal_min"],
                     "vocal_max": song["vocal_max"],
-                    "modulations": parse_modulations(song["modulations"]) if song["modulations"] else [],
+                    "modulations": song.get("modulations", []),
                     "chorus_key": song["chorus_key"],
                     "chorus_chords_raw": song["chorus_chords_raw"],
                     "chorus_chords_roman":
@@ -2002,6 +2002,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
