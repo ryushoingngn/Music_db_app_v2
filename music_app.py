@@ -397,13 +397,22 @@ def compare_field(label, field, public_song, my_song, my_index):
                 st.session_state.msg = f"{label} を更新しました"
                 save_and_refresh()
 
-def compare_list_field(label, field, public_song, my_song, my_index, is_split=False):
+def compare_list_field(label, field, public_song, my_song, my_index, is_mod=False):
 
     pub_val = public_song.get(field)
     my_val = my_song.get(field)
 
-    if is_split and pub_val:
-        pub_val = pub_val.split(",")
+    # ==============================
+    # 🎼 転調専用処理（超重要）
+    # ==============================
+    if is_mod:
+        # 公開側が文字列ならパース
+        if isinstance(pub_val, str):
+            pub_val = parse_modulations(pub_val)
+
+        # 念のため自分側も正規化
+        if isinstance(my_val, str):
+            my_val = parse_modulations(my_val)
 
     col1, col2, col3 = st.columns([3,1,3])
 
@@ -413,7 +422,12 @@ def compare_list_field(label, field, public_song, my_song, my_index, is_split=Fa
     with col3:
         st.write(f"👤 現在: {my_val if my_val else '-'}")
 
-    if str(pub_val) != str(my_val):
+    # 両方空ならボタン出さない
+    if not pub_val and not my_val:
+        return
+
+    # 正規化比較（順序無視）
+    if sorted(pub_val or []) != sorted(my_val or []):
 
         with col2:
             if st.button("← 置き換え", key=f"replace_{field}_{my_index}"):
@@ -1895,7 +1909,7 @@ elif menu == "🌍 公開曲を見る":
                 song,
                 my_song,
                 my_index,
-                is_split=False
+                is_mod=True
             )
         
             st.divider()
@@ -1956,6 +1970,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
