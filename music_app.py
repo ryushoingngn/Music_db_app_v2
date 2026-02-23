@@ -352,18 +352,49 @@ NOTE_MAP = {
     "B":11
 }
 
+import re
+
 # ======================
-# 🎹 Keyバリデーション
+# 🎹 Keyバリデーション（複数・♯♭対応版）
 # ======================
-VALID_KEYS = {
-    "A","B","C","D","E","F","G",
-    "Am","Bm","Cm","Dm","Em","Fm","Gm"
-}
+
+def is_valid_single_key(k):
+    """
+    例：
+    C
+    Cm
+    F#
+    Bb
+    G#m
+    E♭m
+    などを許可
+    """
+    k = k.strip().replace("♯", "#").replace("♭", "b")
+
+    pattern = r"^[A-G](#|b)?m?$"
+    return re.match(pattern, k) is not None
+
 
 def is_valid_key(key_str):
-    if not key_str:
-        return True   # 未入力はOK（任意項目なので）
-    return key_str.strip() in VALID_KEYS
+    """
+    C, G, Am
+    C → D → E♭m
+    C, Dm, F#
+    など複数入力OK
+    """
+    if not key_str.strip():
+        return True
+
+    # 区切り対応（→ , スペース）
+    parts = re.split(r"[,\s→]+", key_str)
+
+    for p in parts:
+        if p.strip() == "":
+            continue
+        if not is_valid_single_key(p):
+            return False
+
+    return True
 
 def note_to_midi(note):
     """
@@ -538,7 +569,7 @@ def validate_song_input(
     # ======================
     if key.strip():
         if not is_valid_key(key):
-            errors.append("Keyは A〜G または Am〜Gm で入力してください")
+            errors.append("Keyは A〜G + #/♭ + m 形式で入力してください（例：C, F#m, Bb）")
 
     # ======================
     # 音域チェック
@@ -1708,6 +1739,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
