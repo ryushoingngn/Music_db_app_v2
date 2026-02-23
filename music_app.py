@@ -1927,16 +1927,71 @@ elif menu == "🌍 公開曲を見る":
                 # 🟡 登録済み
                 # ==========================
                 else:
-
+                
+                    st.success("✔ 登録済み — 情報比較")
+                
                     my_song = data[my_index]
-
+                
+                    # ======================
+                    # 🔧 一括操作ボタン
+                    # ======================
+                
+                    colA, colB = st.columns(2)
+                
+                    # 🟢 不足分一括補完
+                    with colA:
+                        if st.button("🟢 不足分を一括補完", key=f"fill_{song.get('id', song['title'])}"):
+                
+                            fields = [
+                                "key", "bpm",
+                                "vocal_min", "vocal_max",
+                                "chorus_key",
+                                "chorus_chords_raw",
+                                "chorus_chords_roman",
+                                "modulations"
+                            ]
+                
+                            for field in fields:
+                                my_val = my_song.get(field)
+                                pub_val = song.get(field)
+                
+                                # 空判定（None / "" / []）
+                                if (my_val in [None, "", []]) and pub_val not in [None, "", []]:
+                                    data[my_index][field] = pub_val
+                
+                            st.session_state.msg = "不足分を補完しました！"
+                            save_and_refresh()
+                
+                    # 🔴 全上書き
+                    with colB:
+                        if st.button("🔴 公開曲データで全上書き", key=f"overwrite_{song.get('id', song['title'])}"):
+                
+                            for field in [
+                                "key", "bpm",
+                                "vocal_min", "vocal_max",
+                                "chorus_key",
+                                "chorus_chords_raw",
+                                "chorus_chords_roman",
+                                "modulations"
+                            ]:
+                                data[my_index][field] = song.get(field)
+                
+                            st.session_state.msg = "公開曲データで上書きしました！"
+                            save_and_refresh()
+                
+                    st.divider()
+                
+                    # ======================
+                    # 🔍 個別比較表示
+                    # ======================
+                
                     compare_field("Key", "key", song, my_song, my_index)
                     compare_field("BPM", "bpm", song, my_song, my_index)
                     compare_field("最低音", "vocal_min", song, my_song, my_index)
                     compare_field("最高音", "vocal_max", song, my_song, my_index)
                     compare_field("サビKey", "chorus_key", song, my_song, my_index)
                     compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
-
+                
                     compare_list_field(
                         "ローマ数字進行",
                         "chorus_chords_roman",
@@ -1944,7 +1999,7 @@ elif menu == "🌍 公開曲を見る":
                         my_song,
                         my_index
                     )
-
+                
                     compare_list_field(
                         "転調",
                         "modulations",
@@ -1953,13 +2008,13 @@ elif menu == "🌍 公開曲を見る":
                         my_index,
                         is_mod=True
                     )
-
         st.divider()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
