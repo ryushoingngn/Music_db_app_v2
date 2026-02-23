@@ -292,7 +292,39 @@ def load_public_music():
     rows = c.fetchall()
     conn.close()
 
-    return rows
+    result = []
+
+    for row in rows:
+
+        # 🔁 転調 正規化
+        mods = []
+        if row["modulations"]:
+            for x in row["modulations"].split(","):
+                x = x.strip()
+                if x.lstrip("-").isdigit():
+                    mods.append(int(x))
+
+        result.append({
+            "title": row["title"],
+            "artist": row["artist"],
+            "genre": row["genre"],
+            "themes": row["themes"].split(",") if row["themes"] else [],
+            "rating": row["rating"],
+            "comment": row["comment"],
+            "date_added": row["date_added"],
+            "key": row["key"],
+            "bpm": row["bpm"],
+            "vocal_min": row["vocal_min"],
+            "vocal_max": row["vocal_max"],
+            "modulations": mods,
+            "chorus_key": row["chorus_key"],
+            "chorus_chords_raw": row["chorus_chords_raw"],
+            # 🔥 ここが今回の核心
+            "chorus_chords_roman": row["chorus_chords_roman"].split(",")
+                if row["chorus_chords_roman"] else []
+        })
+
+    return result
 
 # ======================
 # ⭐ キャッシュ（大量データ高速化）
@@ -1969,6 +2001,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
