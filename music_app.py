@@ -1782,28 +1782,6 @@ elif menu == "🌍 公開曲を見る":
 
     st.header("🌍 公開されている曲")
 
-    st.markdown("""
-    <style>
-    .song-card {
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-    }
-    
-    .song-registered {
-        background-color: #f0fff4;
-        border-left: 6px solid #22c55e;
-    }
-    
-    .song-unregistered {
-        background-color: #ffffff;
-        border-left: 6px solid #e5e7eb;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-
-
     public_songs = load_public_music()
 
     if len(public_songs) == 0:
@@ -1811,7 +1789,7 @@ elif menu == "🌍 公開曲を見る":
         st.stop()
 
     # ==========================
-    # 🔎 検索欄（NEW）
+    # 🔎 検索欄
     # ==========================
 
     col1, col2 = st.columns(2)
@@ -1847,142 +1825,142 @@ elif menu == "🌍 公開曲を見る":
         st.stop()
 
     st.write(f"{len(filtered_songs)} 件ヒット")
-    
+
     # ==========================
-    # 表示（コンパクト＋展開式）
+    # 🎵 表示
     # ==========================
-    
+
     for song in filtered_songs:
-    
+
         my_index = find_my_song(song["title"], song["artist"])
-    
-        # 登録状態でクラス切替
-        card_class = "song-registered" if my_index is not None else "song-unregistered"
-    
-        st.markdown(f'<div class="song-card {card_class}">', unsafe_allow_html=True)
-    
+        is_registered = my_index is not None
+
         # ======================
-        # 🎵 デフォ表示
+        # 🟢 登録済みは目立たせる
         # ======================
-    
-        col1, col2 = st.columns([4, 1])
-    
-        with col1:
-            st.markdown(f"### 🎵 {song['title']}")
-            st.write(f"🎤 {song['artist']}")
-    
-        with col2:
-            if song.get("rating"):
-                st.write("⭐" * int(song["rating"]))
-    
-        # ======================
-        # 🔽 詳細・比較
-        # ======================
-    
-        with st.expander("▼ 詳細を見る / 比較する"):
-    
-            # ===== 基本情報 =====
-            if song.get("key"):
-                st.write(f"🎹 Key: {song['key']}")
-    
-            if song.get("bpm"):
-                st.write(f"⏱ BPM: {song['bpm']}")
-    
-            if song.get("vocal_min") or song.get("vocal_max"):
-                vmin = song.get("vocal_min") or "?"
-                vmax = song.get("vocal_max") or "?"
-                st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
-    
-            if song.get("modulations"):
-                mods = song["modulations"]
-                if mods:
-                    mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
-                    st.write(f"🔁 転調: {mod_text}")
-    
-            if song.get("chorus_key"):
-                st.write(f"🎼 サビKey: {song['chorus_key']}")
-    
-            if song.get("chorus_chords_roman"):
-                roman = song["chorus_chords_roman"]
-                if roman:
-                    st.write("🎹 サビ進行:", progression_to_text(roman))
-    
-            if song.get("chorus_chords_raw"):
-                st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
-    
-            st.divider()
-    
-            # ==========================
-            # 🟢 未登録
-            # ==========================
-            if my_index is None:
-    
-                st.info("この曲はまだ登録されていません")
-    
-                if st.button("✅ この曲を保存", key=f"copy_{song['id']}"):
-                    new_music = {
-                        "title": song.get("title"),
-                        "artist": song.get("artist"),
-                        "genre": song.get("genre"),
-                        "themes": [],
-                        "rating": 0,
-                        "comment": "",
-                        "date_added": datetime.now().strftime("%Y-%m-%d"),
-                        "key": song.get("key"),
-                        "bpm": song.get("bpm"),
-                        "vocal_min": song.get("vocal_min"),
-                        "vocal_max": song.get("vocal_max"),
-                        "modulations": song.get("modulations", []),
-                        "chorus_key": song.get("chorus_key"),
-                        "chorus_chords_raw": song.get("chorus_chords_raw"),
-                        "chorus_chords_roman": song.get("chorus_chords_roman", []),
-                    }
-    
-                    data.append(new_music)
-                    st.session_state.msg = "公開曲を保存しました！"
-                    save_and_refresh()
-    
-            # ==========================
-            # 🟡 登録済み
-            # ==========================
-            else:
-    
-                st.success("✔ 登録済み — 情報比較")
-    
-                my_song = data[my_index]
-    
-                compare_field("Key", "key", song, my_song, my_index)
-                compare_field("BPM", "bpm", song, my_song, my_index)
-                compare_field("最低音", "vocal_min", song, my_song, my_index)
-                compare_field("最高音", "vocal_max", song, my_song, my_index)
-                compare_field("サビKey", "chorus_key", song, my_song, my_index)
-                compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
-    
-                compare_list_field(
-                    "ローマ数字進行",
-                    "chorus_chords_roman",
-                    song,
-                    my_song,
-                    my_index
-                )
-    
-                compare_list_field(
-                    "転調",
-                    "modulations",
-                    song,
-                    my_song,
-                    my_index,
-                    is_mod=True
-                )
-    
-        st.markdown("</div>", unsafe_allow_html=True)
-    
+
+        with st.container():
+
+            if is_registered:
+                st.success("✔ 登録済み")
+
+            # --- タイトル行 ---
+            col1, col2 = st.columns([4, 1])
+
+            with col1:
+                st.markdown(f"### 🎵 {song['title']}")
+                st.write(f"🎤 {song['artist']}")
+
+            with col2:
+                if song.get("rating"):
+                    st.write("⭐" * int(song["rating"]))
+
+            # ======================
+            # 🔽 詳細・比較
+            # ======================
+
+            with st.expander("▼ 詳細を見る / 比較する"):
+
+                # ===== 基本情報 =====
+                if song.get("key"):
+                    st.write(f"🎹 Key: {song['key']}")
+
+                if song.get("bpm"):
+                    st.write(f"⏱ BPM: {song['bpm']}")
+
+                if song.get("vocal_min") or song.get("vocal_max"):
+                    vmin = song.get("vocal_min") or "?"
+                    vmax = song.get("vocal_max") or "?"
+                    st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
+
+                if song.get("modulations"):
+                    mods = song["modulations"]
+                    if mods:
+                        mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
+                        st.write(f"🔁 転調: {mod_text}")
+
+                if song.get("chorus_key"):
+                    st.write(f"🎼 サビKey: {song['chorus_key']}")
+
+                if song.get("chorus_chords_roman"):
+                    roman = song["chorus_chords_roman"]
+                    if roman:
+                        st.write("🎹 サビ進行:", progression_to_text(roman))
+
+                if song.get("chorus_chords_raw"):
+                    st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
+
+                st.divider()
+
+                # ==========================
+                # 🟢 未登録
+                # ==========================
+                if not is_registered:
+
+                    st.info("この曲はまだ登録されていません")
+
+                    if st.button("✅ この曲を保存", key=f"copy_{song.get('id', song['title'])}"):
+
+                        new_music = {
+                            "title": song.get("title"),
+                            "artist": song.get("artist"),
+                            "genre": song.get("genre"),
+                            "themes": [],
+                            "rating": 0,
+                            "comment": "",
+                            "date_added": datetime.now().strftime("%Y-%m-%d"),
+                            "key": song.get("key"),
+                            "bpm": song.get("bpm"),
+                            "vocal_min": song.get("vocal_min"),
+                            "vocal_max": song.get("vocal_max"),
+                            "modulations": song.get("modulations", []),
+                            "chorus_key": song.get("chorus_key"),
+                            "chorus_chords_raw": song.get("chorus_chords_raw"),
+                            "chorus_chords_roman": song.get("chorus_chords_roman", []),
+                        }
+
+                        data.append(new_music)
+                        st.session_state.msg = "公開曲を保存しました！"
+                        save_and_refresh()
+
+                # ==========================
+                # 🟡 登録済み
+                # ==========================
+                else:
+
+                    my_song = data[my_index]
+
+                    compare_field("Key", "key", song, my_song, my_index)
+                    compare_field("BPM", "bpm", song, my_song, my_index)
+                    compare_field("最低音", "vocal_min", song, my_song, my_index)
+                    compare_field("最高音", "vocal_max", song, my_song, my_index)
+                    compare_field("サビKey", "chorus_key", song, my_song, my_index)
+                    compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
+
+                    compare_list_field(
+                        "ローマ数字進行",
+                        "chorus_chords_roman",
+                        song,
+                        my_song,
+                        my_index
+                    )
+
+                    compare_list_field(
+                        "転調",
+                        "modulations",
+                        song,
+                        my_song,
+                        my_index,
+                        is_mod=True
+                    )
+
         st.divider()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
