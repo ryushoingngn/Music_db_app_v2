@@ -1827,178 +1827,189 @@ elif menu == "🌍 公開曲を見る":
         st.stop()
 
     st.write(f"{len(filtered_songs)} 件ヒット")
-
+    
     # ==========================
-    # 表示
+    # 表示（コンパクト＋展開式）
     # ==========================
-
+    
     for song in filtered_songs:
-
-        st.subheader(f"🎵 {song['title']}")
-        st.write(f"🎤 Artist: {song['artist']}")
     
-        # ===== 基本情報 =====
-        if song.get("key"):
-            st.write(f"🎹 Key: {song['key']}")
+        # ======================
+        # 🎵 デフォ表示（超シンプル）
+        # ======================
     
-        if song.get("bpm"):
-            st.write(f"⏱ BPM: {song['bpm']}")
+        col1, col2 = st.columns([4, 1])
     
-        # ===== ボーカル音域 =====
-        if song.get("vocal_min") or song.get("vocal_max"):
-            vmin = song.get("vocal_min") or "?"
-            vmax = song.get("vocal_max") or "?"
-            st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
+        with col1:
+            st.markdown(f"### 🎵 {song['title']}")
+            st.write(f"🎤 {song['artist']}")
     
-        # ===== 転調 =====
-        if song.get("modulations"):
-            mods = song["modulations"]
-            if mods:
-                mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
-                st.write(f"🔁 転調: {mod_text}")
+        with col2:
+            if song.get("rating"):
+                st.write("⭐" * int(song["rating"]))
     
-        # ===== サビ情報 =====
-        if song.get("chorus_key"):
-            st.write(f"🎼 サビKey: {song['chorus_key']}")
+        # ======================
+        # 🔽 詳細・比較は折りたたみ
+        # ======================
     
-        if song.get("chorus_chords_roman"):
-            roman = song["chorus_chords_roman"]
-            if roman:
-                st.write("🎹 サビ進行:", progression_to_text(roman))
+        with st.expander("▼ 詳細を見る / 比較する"):
     
-        if song.get("chorus_chords_raw"):
-            st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
+            # ===== 基本情報 =====
+            if song.get("key"):
+                st.write(f"🎹 Key: {song['key']}")
+    
+            if song.get("bpm"):
+                st.write(f"⏱ BPM: {song['bpm']}")
+    
+            if song.get("vocal_min") or song.get("vocal_max"):
+                vmin = song.get("vocal_min") or "?"
+                vmax = song.get("vocal_max") or "?"
+                st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
+    
+            if song.get("modulations"):
+                mods = song["modulations"]
+                if mods:
+                    mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
+                    st.write(f"🔁 転調: {mod_text}")
+    
+            if song.get("chorus_key"):
+                st.write(f"🎼 サビKey: {song['chorus_key']}")
+    
+            if song.get("chorus_chords_roman"):
+                roman = song["chorus_chords_roman"]
+                if roman:
+                    st.write("🎹 サビ進行:", progression_to_text(roman))
+    
+            if song.get("chorus_chords_raw"):
+                st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
+    
+            st.divider()
+    
+            # ==========================
+            # 🔎 状態判定
+            # ==========================
+    
+            my_index = find_my_song(song["title"], song["artist"])
+    
+            # ==========================
+            # 🟢 未登録
+            # ==========================
+    
+            if my_index is None:
+    
+                st.info("この曲はまだ登録されていません")
+    
+                if st.button("✅ この曲を保存", key=f"copy_{song['id']}"):
+    
+                    new_music = {
+                        "title": song.get("title"),
+                        "artist": song.get("artist"),
+                        "genre": song.get("genre"),
+                        "themes": [],
+                        "rating": 0,
+                        "comment": "",
+                        "date_added": datetime.now().strftime("%Y-%m-%d"),
+                        "key": song.get("key"),
+                        "bpm": song.get("bpm"),
+                        "vocal_min": song.get("vocal_min"),
+                        "vocal_max": song.get("vocal_max"),
+                        "modulations": song.get("modulations", []),
+                        "chorus_key": song.get("chorus_key"),
+                        "chorus_chords_raw": song.get("chorus_chords_raw"),
+                        "chorus_chords_roman": song.get("chorus_chords_roman", []),
+                    }
+    
+                    data.append(new_music)
+                    st.session_state.msg = "公開曲を保存しました！"
+                    save_and_refresh()
+    
+            # ==========================
+            # 🟡 登録済み
+            # ==========================
+    
+            else:
+    
+                st.success("✔ 登録済み — 情報比較")
+    
+                my_song = data[my_index]
+    
+                compare_field("Key", "key", song, my_song, my_index)
+                compare_field("BPM", "bpm", song, my_song, my_index)
+                compare_field("最低音", "vocal_min", song, my_song, my_index)
+                compare_field("最高音", "vocal_max", song, my_song, my_index)
+                compare_field("サビKey", "chorus_key", song, my_song, my_index)
+                compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
+    
+                compare_list_field(
+                    "ローマ数字進行",
+                    "chorus_chords_roman",
+                    song,
+                    my_song,
+                    my_index
+                )
+    
+                compare_list_field(
+                    "転調",
+                    "modulations",
+                    song,
+                    my_song,
+                    my_index,
+                    is_mod=True
+                )
+    
+                st.divider()
+    
+                # 🔄 不足補完
+                if st.button("🔄 不足情報を一括補完", key=f"bulk_{my_index}"):
+    
+                    updated = False
+    
+                    for field in [
+                        "key", "bpm", "vocal_min", "vocal_max",
+                        "chorus_key", "chorus_chords_raw"
+                    ]:
+                        if not my_song.get(field) and song.get(field):
+                            my_song[field] = song[field]
+                            updated = True
+    
+                    if not my_song.get("chorus_chords_roman") and song.get("chorus_chords_roman"):
+                        my_song["chorus_chords_roman"] = song["chorus_chords_roman"]
+                        updated = True
+    
+                    if not my_song.get("modulations") and song.get("modulations"):
+                        my_song["modulations"] = song["modulations"]
+                        updated = True
+    
+                    if updated:
+                        st.session_state.msg = "不足情報を補完しました！"
+                        save_and_refresh()
+                    else:
+                        st.info("補完できる情報はありません")
+    
+                # 🚨 全上書き
+                if st.button("⚠ 公開情報で全上書き", key=f"overwrite_{my_index}"):
+    
+                    data[my_index].update({
+                        "key": song.get("key"),
+                        "bpm": song.get("bpm"),
+                        "vocal_min": song.get("vocal_min"),
+                        "vocal_max": song.get("vocal_max"),
+                        "chorus_key": song.get("chorus_key"),
+                        "chorus_chords_raw": song.get("chorus_chords_raw"),
+                        "chorus_chords_roman": song.get("chorus_chords_roman", []),
+                        "modulations": song.get("modulations", []),
+                    })
+    
+                    st.session_state.msg = "公開情報で上書きしました"
+                    save_and_refresh()
     
         st.divider()
-
-
-        # ==========================
-        # 🔎 状態判定
-        # ==========================
-        
-        my_index = find_my_song(song["title"], song["artist"])
-        
-        # ==========================
-        # 🟢 未登録
-        # ==========================
-        if my_index is None:
-        
-            if st.button("✅ この曲を保存", key=f"copy_{song['id']}"):
-        
-                new_music = {
-                    "title": song.get("title"),
-                    "artist": song.get("artist"),
-                    "genre": song.get("genre"),
-                    "themes": [],
-                    "rating": 0,
-                    "comment": "",
-                    "date_added": datetime.now().strftime("%Y-%m-%d"),
-                    "key": song.get("key"),
-                    "bpm": song.get("bpm"),
-                    "vocal_min": song.get("vocal_min"),
-                    "vocal_max": song.get("vocal_max"),
-                    "modulations": song.get("modulations", []),  # ← listそのまま
-                    "chorus_key": song.get("chorus_key"),
-                    "chorus_chords_raw": song.get("chorus_chords_raw"),
-                    "chorus_chords_roman": song.get("chorus_chords_roman", []),  # ← listそのまま
-                }
-        
-                data.append(new_music)
-                st.session_state.msg = "公開曲を保存しました！"
-                save_and_refresh()
-        
-        # ==========================
-        # 🟡 登録済み → 差分エディタ表示
-        # ==========================
-        else:
-        
-            st.success("✔ 登録済み — 情報比較")
-        
-            my_song = data[my_index]
-        
-            st.divider()
-            st.subheader("🔍 情報比較")
-        
-            compare_field("Key", "key", song, my_song, my_index)
-            compare_field("BPM", "bpm", song, my_song, my_index)
-            compare_field("最低音", "vocal_min", song, my_song, my_index)
-            compare_field("最高音", "vocal_max", song, my_song, my_index)
-            compare_field("サビKey", "chorus_key", song, my_song, my_index)
-            compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
-        
-            compare_list_field(
-                "ローマ数字進行",
-                "chorus_chords_roman",
-                song,
-                my_song,
-                my_index
-            )
-        
-            compare_list_field(
-                "転調",
-                "modulations",
-                song,
-                my_song,
-                my_index,
-                is_mod=True
-            )
-        
-            st.divider()
-        
-            # =====================
-            # 🔄 不足一括補完（安全版）
-            # =====================
-            if st.button("🔄 不足情報を一括補完", key=f"bulk_{my_index}"):
-        
-                updated = False
-        
-                for field in [
-                    "key", "bpm", "vocal_min", "vocal_max",
-                    "chorus_key", "chorus_chords_raw"
-                ]:
-                    if not my_song.get(field) and song.get(field):
-                        my_song[field] = song[field]
-                        updated = True
-        
-                # listはそのまま代入（split禁止）
-                if not my_song.get("chorus_chords_roman") and song.get("chorus_chords_roman"):
-                    my_song["chorus_chords_roman"] = song["chorus_chords_roman"]
-                    updated = True
-        
-                if not my_song.get("modulations") and song.get("modulations"):
-                    my_song["modulations"] = song["modulations"]
-                    updated = True
-        
-                if updated:
-                    st.session_state.msg = "不足情報を補完しました！"
-                    save_and_refresh()
-                else:
-                    st.info("補完できる情報はありません")
-        
-            # =====================
-            # 🚨 全上書き（安全版）
-            # =====================
-            if st.button("⚠ 公開情報で全上書き", key=f"overwrite_{my_index}"):
-        
-                data[my_index].update({
-                    "key": song.get("key"),
-                    "bpm": song.get("bpm"),
-                    "vocal_min": song.get("vocal_min"),
-                    "vocal_max": song.get("vocal_max"),
-                    "chorus_key": song.get("chorus_key"),
-                    "chorus_chords_raw": song.get("chorus_chords_raw"),
-                    "chorus_chords_roman": song.get("chorus_chords_roman", []),
-                    "modulations": song.get("modulations", []),
-                })
-        
-                st.session_state.msg = "公開情報で上書きしました"
-                save_and_refresh()
-        
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
