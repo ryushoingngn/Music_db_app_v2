@@ -1705,10 +1705,45 @@ elif menu == "🌍 公開曲を見る":
     for song in filtered_songs:
 
         st.subheader(f"🎵 {song['title']}")
-        st.write(f"Artist: {song['artist']}")
-
-        if st.button(f"この曲を保存", key=f"copy_{song['id']}"):
-        
+        st.write(f"🎤 Artist: {song['artist']}")
+    
+        # ===== 基本情報 =====
+        if song.get("key"):
+            st.write(f"🎹 Key: {song['key']}")
+    
+        if song.get("bpm"):
+            st.write(f"⏱ BPM: {song['bpm']}")
+    
+        # ===== ボーカル音域 =====
+        if song.get("vocal_min") or song.get("vocal_max"):
+            vmin = song.get("vocal_min") or "?"
+            vmax = song.get("vocal_max") or "?"
+            st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
+    
+        # ===== 転調 =====
+        if song.get("modulations"):
+            mods = parse_modulations(song["modulations"])
+            if mods:
+                mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
+                st.write(f"🔁 転調: {mod_text}")
+    
+        # ===== サビ情報 =====
+        if song.get("chorus_key"):
+            st.write(f"🎼 サビKey: {song['chorus_key']}")
+    
+        if song.get("chorus_chords_roman"):
+            roman = song["chorus_chords_roman"].split(",")
+            if roman:
+                st.write("🎹 サビ進行:", progression_to_text(roman))
+    
+        if song.get("chorus_chords_raw"):
+            st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
+    
+        st.divider()
+    
+        # ===== 保存ボタン =====
+        if st.button("この曲を保存", key=f"copy_{song['id']}"):
+    
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
             else:
@@ -1729,7 +1764,7 @@ elif menu == "🌍 公開曲を見る":
                     "chorus_chords_raw": song["chorus_chords_raw"],
                     "chorus_chords_roman": song["chorus_chords_roman"].split(",") if song["chorus_chords_roman"] else [],
                 }
-        
+    
                 data.append(new_music)
                 st.session_state.msg = "公開曲を保存しました！"
                 save_and_refresh()
@@ -1739,6 +1774,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
