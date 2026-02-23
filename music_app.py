@@ -374,6 +374,54 @@ def has_missing_info(my_song, public_song):
 
     return False
 
+def compare_field(label, field, public_song, my_song, my_index):
+
+    pub_val = public_song.get(field)
+    my_val = my_song.get(field)
+
+    col1, col2, col3 = st.columns([3,1,3])
+
+    with col1:
+        st.write(f"🌍 {label}: {pub_val if pub_val else '-'}")
+
+    with col3:
+        st.write(f"👤 現在: {my_val if my_val else '-'}")
+
+    # 値が違う場合のみボタン表示
+    if (pub_val or "") != (my_val or ""):
+
+        with col2:
+            if st.button("← 置き換え", key=f"replace_{field}_{my_index}"):
+
+                data[my_index][field] = pub_val
+                st.session_state.msg = f"{label} を更新しました"
+                save_and_refresh()
+
+def compare_list_field(label, field, public_song, my_song, my_index, is_split=False):
+
+    pub_val = public_song.get(field)
+    my_val = my_song.get(field)
+
+    if is_split and pub_val:
+        pub_val = pub_val.split(",")
+
+    col1, col2, col3 = st.columns([3,1,3])
+
+    with col1:
+        st.write(f"🌍 {label}: {pub_val if pub_val else '-'}")
+
+    with col3:
+        st.write(f"👤 現在: {my_val if my_val else '-'}")
+
+    if str(pub_val) != str(my_val):
+
+        with col2:
+            if st.button("← 置き換え", key=f"replace_{field}_{my_index}"):
+
+                data[my_index][field] = pub_val or []
+                st.session_state.msg = f"{label} を更新しました"
+                save_and_refresh()
+
 # ======================
 # 🎤 音名 → 数値変換（音域検索用）
 # ======================
@@ -1786,9 +1834,9 @@ elif menu == "🌍 公開曲を見る":
         # 🟢 未登録
         # ==========================
         if my_index is None:
-
+        
             if st.button("✅ この曲を保存", key=f"copy_{song['id']}"):
-
+        
                 new_music = {
                     "title": song["title"],
                     "artist": song["artist"],
@@ -1808,46 +1856,107 @@ elif menu == "🌍 公開曲を見る":
                         song["chorus_chords_roman"].split(",")
                         if song["chorus_chords_roman"] else [],
                 }
-
+        
                 data.append(new_music)
                 st.session_state.msg = "公開曲を保存しました！"
                 save_and_refresh()
-
+        
         # ==========================
-        # 🟡 登録済み
+        # 🟡 登録済み → 差分エディタ表示
         # ==========================
         else:
-
+        
+            st.success("✔ 登録済み — 情報比較")
+        
             my_song = data[my_index]
-
-            if has_missing_info(my_song, song):
-
-                if st.button("🔄 不足情報を補完", key=f"update_{song['id']}"):
-
-                    # 足りない部分だけ補完
-                    for field in [
-                        "key", "bpm", "vocal_min", "vocal_max",
-                        "chorus_key", "chorus_chords_raw"
-                    ]:
-                        if not my_song.get(field) and song.get(field):
-                            my_song[field] = song[field]
-
-                    if not my_song.get("modulations") and song.get("modulations"):
-                        my_song["modulations"] = parse_modulations(song["modulations"])
-
-                    if not my_song.get("chorus_chords_roman") and song.get("chorus_chords_roman"):
-                        my_song["chorus_chords_roman"] = song["chorus_chords_roman"].split(",")
-
+        
+            st.divider()
+            st.subheader("🔍 情報比較")
+        
+            compare_field("Key", "key", song, my_song, my_index)
+            compare_field("BPM", "bpm", song, my_song, my_index)
+            compare_field("最低音", "vocal_min", song, my_song, my_index)
+            compare_field("最高音", "vocal_max", song, my_song, my_index)
+            compare_field("サビKey", "chorus_key", song, my_song, my_index)
+            compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
+        
+            compare_list_field(
+                "ローマ数字進行",
+                "chorus_chords_roman",
+                song,
+                my_song,
+                my_index,
+                is_split=True
+            )
+        
+            compare_list_field(
+                "転調",
+                "modulations",
+                song,
+                my_song,
+                my_index,
+                is_split=False
+            )
+        
+            st.divider()
+        
+            # =====================
+            # 🔄 不足一括補完
+            # =====================
+            if st.button("🔄 不足情報を一括補完", key=f"bulk_{my_index}"):
+        
+                updated = False
+        
+                for field in [
+                    "key", "bpm", "vocal_min", "vocal_max",
+                    "chorus_key", "chorus_chords_raw"
+                ]:
+                    if not my_song.get(field) and song.get(field):
+                        my_song[field] = song[field]
+                        updated = True
+        
+                if not my_song.get("chorus_chords_roman") and song.get("chorus_chords_roman"):
+                    my_song["chorus_chords_roman"] = song["chorus_chords_roman"].split(",")
+                    updated = True
+        
+                if not my_song.get("modulations") and song.get("modulations"):
+                    my_song["modulations"] = parse_modulations(song["modulations"])
+                    updated = True
+        
+                if updated:
                     st.session_state.msg = "不足情報を補完しました！"
                     save_and_refresh()
-
-            else:
-                st.success("✔ 登録済み（情報も十分）")
+                else:
+                    st.info("補完できる情報はありません")
+        
+            # =====================
+            # 🚨 全上書き
+            # =====================
+            if st.button("⚠ 公開情報で全上書き", key=f"overwrite_{my_index}"):
+        
+                data[my_index].update({
+                    "key": song["key"],
+                    "bpm": song["bpm"],
+                    "vocal_min": song["vocal_min"],
+                    "vocal_max": song["vocal_max"],
+                    "chorus_key": song["chorus_key"],
+                    "chorus_chords_raw": song["chorus_chords_raw"],
+                    "chorus_chords_roman":
+                        song["chorus_chords_roman"].split(",")
+                        if song["chorus_chords_roman"] else [],
+                    "modulations":
+                        parse_modulations(song["modulations"])
+                        if song["modulations"] else [],
+                })
+        
+                st.session_state.msg = "公開情報で上書きしました"
+                save_and_refresh()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
