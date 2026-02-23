@@ -1708,38 +1708,38 @@ elif menu == "🌍 公開曲を見る":
         st.write(f"Artist: {song['artist']}")
 
         if st.button(f"この曲を保存", key=f"copy_{song['id']}"):
-
+        
             if is_duplicate_song(song["title"], song["artist"]):
                 st.warning("すでに登録済みです")
-                st.stop()
-            
-            new_music = {
-                "title": song["title"],
-                "artist": song["artist"],
-                "genre": song["genre"],
-                "themes": [],
-                "rating": 0,
-                "comment": "",
-                "date_added": datetime.now().strftime("%Y-%m-%d"),
-                "key": song["key"],
-                "bpm": song["bpm"],
-                "vocal_min": song["vocal_min"],
-                "vocal_max": song["vocal_max"],
-                "modulations": parse_modulations(song["modulations"]) if song["modulations"] else [],
-                "chorus_key": song["chorus_key"],
-                "chorus_chords_raw": song["chorus_chords_raw"],
-                "chorus_chords_roman": song["chorus_chords_roman"].split(",") if song["chorus_chords_roman"] else [],
-            }
-
-            data.append(new_music)
-            st.session_state.msg = "公開曲を保存しました！"
-            save_and_refresh()
+            else:
+                new_music = {
+                    "title": song["title"],
+                    "artist": song["artist"],
+                    "genre": song["genre"],
+                    "themes": [],
+                    "rating": 0,
+                    "comment": "",
+                    "date_added": datetime.now().strftime("%Y-%m-%d"),
+                    "key": song["key"],
+                    "bpm": song["bpm"],
+                    "vocal_min": song["vocal_min"],
+                    "vocal_max": song["vocal_max"],
+                    "modulations": parse_modulations(song["modulations"]) if song["modulations"] else [],
+                    "chorus_key": song["chorus_key"],
+                    "chorus_chords_raw": song["chorus_chords_raw"],
+                    "chorus_chords_roman": song["chorus_chords_roman"].split(",") if song["chorus_chords_roman"] else [],
+                }
+        
+                data.append(new_music)
+                st.session_state.msg = "公開曲を保存しました！"
+                save_and_refresh()
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
