@@ -1772,26 +1772,6 @@ elif menu == "年別まとめ":
 
 
 
-st.markdown("""
-<style>
-.song-card {
-    padding: 1rem;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-}
-
-.song-registered {
-    background-color: #f0fff4;
-    border-left: 6px solid #22c55e;
-}
-
-.song-unregistered {
-    background-color: #ffffff;
-    border-left: 6px solid #e5e7eb;
-}
-</style>
-""", unsafe_allow_html=True)
-
 
 
 # ======================
@@ -1801,6 +1781,28 @@ st.markdown("""
 elif menu == "🌍 公開曲を見る":
 
     st.header("🌍 公開されている曲")
+
+    st.markdown("""
+    <style>
+    .song-card {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .song-registered {
+        background-color: #f0fff4;
+        border-left: 6px solid #22c55e;
+    }
+    
+    .song-unregistered {
+        background-color: #ffffff;
+        border-left: 6px solid #e5e7eb;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+
 
     public_songs = load_public_music()
 
@@ -1981,6 +1983,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
