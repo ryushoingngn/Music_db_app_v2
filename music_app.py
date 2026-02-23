@@ -1772,7 +1772,25 @@ elif menu == "年別まとめ":
 
 
 
+st.markdown("""
+<style>
+.song-card {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
 
+.song-registered {
+    background-color: #f0fff4;
+    border-left: 6px solid #22c55e;
+}
+
+.song-unregistered {
+    background-color: #ffffff;
+    border-left: 6px solid #e5e7eb;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
 
@@ -1834,8 +1852,15 @@ elif menu == "🌍 公開曲を見る":
     
     for song in filtered_songs:
     
+        my_index = find_my_song(song["title"], song["artist"])
+    
+        # 登録状態でクラス切替
+        card_class = "song-registered" if my_index is not None else "song-unregistered"
+    
+        st.markdown(f'<div class="song-card {card_class}">', unsafe_allow_html=True)
+    
         # ======================
-        # 🎵 デフォ表示（超シンプル）
+        # 🎵 デフォ表示
         # ======================
     
         col1, col2 = st.columns([4, 1])
@@ -1849,7 +1874,7 @@ elif menu == "🌍 公開曲を見る":
                 st.write("⭐" * int(song["rating"]))
     
         # ======================
-        # 🔽 詳細・比較は折りたたみ
+        # 🔽 詳細・比較
         # ======================
     
         with st.expander("▼ 詳細を見る / 比較する"):
@@ -1886,21 +1911,13 @@ elif menu == "🌍 公開曲を見る":
             st.divider()
     
             # ==========================
-            # 🔎 状態判定
-            # ==========================
-    
-            my_index = find_my_song(song["title"], song["artist"])
-    
-            # ==========================
             # 🟢 未登録
             # ==========================
-    
             if my_index is None:
     
                 st.info("この曲はまだ登録されていません")
     
                 if st.button("✅ この曲を保存", key=f"copy_{song['id']}"):
-    
                     new_music = {
                         "title": song.get("title"),
                         "artist": song.get("artist"),
@@ -1926,7 +1943,6 @@ elif menu == "🌍 公開曲を見る":
             # ==========================
             # 🟡 登録済み
             # ==========================
-    
             else:
     
                 st.success("✔ 登録済み — 情報比較")
@@ -1957,51 +1973,7 @@ elif menu == "🌍 公開曲を見る":
                     is_mod=True
                 )
     
-                st.divider()
-    
-                # 🔄 不足補完
-                if st.button("🔄 不足情報を一括補完", key=f"bulk_{my_index}"):
-    
-                    updated = False
-    
-                    for field in [
-                        "key", "bpm", "vocal_min", "vocal_max",
-                        "chorus_key", "chorus_chords_raw"
-                    ]:
-                        if not my_song.get(field) and song.get(field):
-                            my_song[field] = song[field]
-                            updated = True
-    
-                    if not my_song.get("chorus_chords_roman") and song.get("chorus_chords_roman"):
-                        my_song["chorus_chords_roman"] = song["chorus_chords_roman"]
-                        updated = True
-    
-                    if not my_song.get("modulations") and song.get("modulations"):
-                        my_song["modulations"] = song["modulations"]
-                        updated = True
-    
-                    if updated:
-                        st.session_state.msg = "不足情報を補完しました！"
-                        save_and_refresh()
-                    else:
-                        st.info("補完できる情報はありません")
-    
-                # 🚨 全上書き
-                if st.button("⚠ 公開情報で全上書き", key=f"overwrite_{my_index}"):
-    
-                    data[my_index].update({
-                        "key": song.get("key"),
-                        "bpm": song.get("bpm"),
-                        "vocal_min": song.get("vocal_min"),
-                        "vocal_max": song.get("vocal_max"),
-                        "chorus_key": song.get("chorus_key"),
-                        "chorus_chords_raw": song.get("chorus_chords_raw"),
-                        "chorus_chords_roman": song.get("chorus_chords_roman", []),
-                        "modulations": song.get("modulations", []),
-                    })
-    
-                    st.session_state.msg = "公開情報で上書きしました"
-                    save_and_refresh()
+        st.markdown("</div>", unsafe_allow_html=True)
     
         st.divider()
 
@@ -2009,6 +1981,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
