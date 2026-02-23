@@ -305,6 +305,7 @@ def load_public_music():
                     mods.append(int(x))
 
         result.append({
+            "id": row["id"],
             "title": row["title"],
             "artist": row["artist"],
             "genre": row["genre"],
@@ -2001,6 +2002,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
