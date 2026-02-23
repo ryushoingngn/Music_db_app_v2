@@ -1862,7 +1862,7 @@ elif menu == "🌍 公開曲を見る":
             st.write(f"🎼 サビKey: {song['chorus_key']}")
     
         if song.get("chorus_chords_roman"):
-            roman = song["chorus_chords_roman"].split(",")
+            roman = song["chorus_chords_roman"]
             if roman:
                 st.write("🎹 サビ進行:", progression_to_text(roman))
     
@@ -2002,6 +2002,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
