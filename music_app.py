@@ -1852,7 +1852,7 @@ elif menu == "🌍 公開曲を見る":
     
         # ===== 転調 =====
         if song.get("modulations"):
-            mods = parse_modulations(song["modulations"])
+            mods = song["modulations"]
             if mods:
                 mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
                 st.write(f"🔁 転調: {mod_text}")
@@ -2002,6 +2002,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
