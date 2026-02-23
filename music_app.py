@@ -352,6 +352,19 @@ NOTE_MAP = {
     "B":11
 }
 
+# ======================
+# 🎹 Keyバリデーション
+# ======================
+VALID_KEYS = {
+    "A","B","C","D","E","F","G",
+    "Am","Bm","Cm","Dm","Em","Fm","Gm"
+}
+
+def is_valid_key(key_str):
+    if not key_str:
+        return True   # 未入力はOK（任意項目なので）
+    return key_str.strip() in VALID_KEYS
+
 def note_to_midi(note):
     """
     C4 → 60 みたいな数値に変換
@@ -493,7 +506,8 @@ def roman_match(song_prog, query_prog):
     return False
 
 def validate_song_input(
-    title, artist, bpm, vocal_min, vocal_max,
+    title, artist, key,
+    bpm, vocal_min, vocal_max,
     modulation_input, date_added
 ):
 
@@ -518,6 +532,13 @@ def validate_song_input(
             bpm_val = int(bpm)
             if bpm_val < 1 or bpm_val > 300:
                 errors.append("BPMは1〜300の範囲で入力してください")
+
+    # ======================
+    # Keyチェック
+    # ======================
+    if key.strip():
+        if not is_valid_key(key):
+            errors.append("Keyは A〜G または Am〜Gm で入力してください")
 
     # ======================
     # 音域チェック
@@ -783,7 +804,8 @@ def edit_form(music, index):
 
         # 必須チェック
         errors = validate_song_input(
-            title, artist, bpm, vocal_min, vocal_max,
+            title, artist, key,
+            bpm, vocal_min, vocal_max,
             modulation_input,
             date_added
         )
@@ -1104,7 +1126,8 @@ if menu == "曲追加":
 
         # 必須チェック
         errors = validate_song_input(
-            title, artist, bpm, vocal_min, vocal_max,
+            title, artist, key,
+            bpm, vocal_min, vocal_max,
             modulation_input,
             datetime.now().strftime("%Y-%m-%d")
         )
@@ -1685,6 +1708,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
