@@ -1827,71 +1827,90 @@ elif menu == "🌍 公開曲を見る":
     st.write(f"{len(filtered_songs)} 件ヒット")
 
     # ==========================
-    # 🎵 表示
+    # 🎼 同曲をグループ化
     # ==========================
     
-    for song in filtered_songs:
+    grouped_songs = {}
     
-        my_index = find_my_song(song["title"], song["artist"])
-        is_registered = my_index is not None
+    for song in filtered_songs:
+        key = (song["title"], song["artist"])
+        grouped_songs.setdefault(key, []).append(song)
+    
+    # ==========================
+    # 🎵 表示（曲ごとにまとめる）
+    # ==========================
+    
+    for (title, artist), versions in grouped_songs.items():
     
         with st.container():
     
-            # --- タイトル行（デフォルトはこれだけ） ---
-            col1, col2 = st.columns([4, 1])
-    
-            with col1:
-                st.markdown(f"### 🎵 {song['title']}")
-                st.write(f"🎤 {song['artist']}")
-    
-            
-    
-            # ======================
-            # 🔽 詳細・比較（全曲表示可能）
-            # ======================
+            # --- タイトル表示 ---
+            st.markdown(f"### 🎵 {title}")
+            st.write(f"🎤 {artist}")
     
             with st.expander("▼ 詳細を見る"):
-
+    
+                # ==========================
+                # 🎚 バージョン選択
+                # ==========================
+    
+                if len(versions) > 1:
+    
+                    selected_index = st.radio(
+                        "バージョンを選択",
+                        options=range(len(versions)),
+                        format_func=lambda i: f"Version {i+1}",
+                        key=f"version_select_{title}_{artist}"
+                    )
+    
+                    song = versions[selected_index]
+    
+                else:
+                    song = versions[0]
+    
+                # 選択されたバージョンで判定
+                my_index = find_my_song(song["title"], song["artist"])
+                is_registered = my_index is not None
+    
                 # ==========================
                 # 🟢 未登録
                 # ==========================
                 if not is_registered:
-            
-                    # ===== 公開曲の単体情報表示 =====
+    
                     if song.get("key"):
                         st.write(f"🎹 Key: {song['key']}")
-            
+    
                     if song.get("bpm"):
                         st.write(f"⏱ BPM: {song['bpm']}")
-            
+    
                     if song.get("vocal_min") or song.get("vocal_max"):
                         vmin = song.get("vocal_min") or "?"
                         vmax = song.get("vocal_max") or "?"
                         st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
-            
+    
                     if song.get("modulations"):
                         mods = song["modulations"]
                         if mods:
                             mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
                             st.write(f"🔁 転調: {mod_text}")
-            
+    
                     if song.get("chorus_key"):
                         st.write(f"🎼 サビKey: {song['chorus_key']}")
-            
+    
                     if song.get("chorus_chords_roman"):
                         roman = song["chorus_chords_roman"]
                         if roman:
                             st.write("🎹 サビ進行:", progression_to_text(roman))
-            
+    
                     if song.get("chorus_chords_raw"):
                         st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
-            
+    
                     st.divider()
-            
+    
                     st.info("この曲はまだ登録されていません")
-            
-                    if st.button("✅ この曲を保存", key=f"copy_{song.get('id', song['title'])}"):
-            
+    
+                    if st.button("✅ このバージョンを保存", key=f"copy_{title}_{artist}_{selected_index if len(versions)>1 else 0}"):
+    
                         new_music = {
                             "title": song.get("title"),
                             "artist": song.get("artist"),
@@ -1909,26 +1928,25 @@ elif menu == "🌍 公開曲を見る":
                             "chorus_chords_raw": song.get("chorus_chords_raw"),
                             "chorus_chords_roman": song.get("chorus_chords_roman", []),
                         }
-            
+    
                         data.append(new_music)
                         st.session_state.msg = "公開曲を保存しました！"
                         save_and_refresh()
-            
+    
                 # ==========================
                 # 🟡 登録済み
                 # ==========================
                 else:
-            
+    
                     st.success("✔ 登録済み — 情報比較")
-            
+    
                     my_song = data[my_index]
-            
+    
                     colA, colB = st.columns(2)
-            
-                    # 🟢 不足分一括補完
+    
                     with colA:
-                        if st.button("🟢 不足分を一括補完", key=f"fill_{song.get('id', song['title'])}"):
-            
+                        if st.button("🟢 不足分を一括補完", key=f"fill_{title}_{artist}_{selected_index}"):
+    
                             fields = [
                                 "key", "bpm",
                                 "vocal_min", "vocal_max",
@@ -1937,21 +1955,20 @@ elif menu == "🌍 公開曲を見る":
                                 "chorus_chords_roman",
                                 "modulations"
                             ]
-            
+    
                             for field in fields:
                                 my_val = my_song.get(field)
                                 pub_val = song.get(field)
-            
+    
                                 if (my_val in [None, "", []]) and pub_val not in [None, "", []]:
                                     data[my_index][field] = pub_val
-            
+    
                             st.session_state.msg = "不足分を補完しました！"
                             save_and_refresh()
-            
-                    # 🔴 全上書き
+    
                     with colB:
-                        if st.button("🔴 公開曲データで全上書き", key=f"overwrite_{song.get('id', song['title'])}"):
-            
+                        if st.button("🔴 公開曲データで全上書き", key=f"overwrite_{title}_{artist}_{selected_index}"):
+    
                             for field in [
                                 "key", "bpm",
                                 "vocal_min", "vocal_max",
@@ -1961,20 +1978,19 @@ elif menu == "🌍 公開曲を見る":
                                 "modulations"
                             ]:
                                 data[my_index][field] = song.get(field)
-            
+    
                             st.session_state.msg = "公開曲データで上書きしました！"
                             save_and_refresh()
-            
+    
                     st.divider()
-            
-                    # 🔍 比較のみ表示（単体情報は出さない）
+    
                     compare_field("Key", "key", song, my_song, my_index)
                     compare_field("BPM", "bpm", song, my_song, my_index)
                     compare_field("最低音", "vocal_min", song, my_song, my_index)
                     compare_field("最高音", "vocal_max", song, my_song, my_index)
                     compare_field("サビKey", "chorus_key", song, my_song, my_index)
                     compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
-            
+    
                     compare_list_field(
                         "コード進行",
                         "chorus_chords_roman",
@@ -1982,7 +1998,7 @@ elif menu == "🌍 公開曲を見る":
                         my_song,
                         my_index
                     )
-            
+    
                     compare_list_field(
                         "転調",
                         "modulations",
@@ -1998,6 +2014,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
