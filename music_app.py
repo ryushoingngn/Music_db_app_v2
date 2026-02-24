@@ -424,7 +424,7 @@ def compare_field(label, field, public_song, my_song, my_index):
     if (pub_val or "") != (my_val or ""):
 
         with col2:
-            if st.button("← 置き換え", key=f"replace_{field}_{my_index}"):
+            if st.button("上書き", key=f"replace_{field}_{my_index}"):
 
                 data[my_index][field] = pub_val
                 st.session_state.msg = f"{label} を更新しました"
@@ -463,7 +463,7 @@ def compare_list_field(label, field, public_song, my_song, my_index, is_mod=Fals
     if sorted(pub_val or []) != sorted(my_val or []):
 
         with col2:
-            if st.button("← 置き換え", key=f"replace_{field}_{my_index}"):
+            if st.button("上書き", key=f"replace_{field}_{my_index}"):
 
                 data[my_index][field] = pub_val or []
                 st.session_state.msg = f"{label} を更新しました"
@@ -1978,7 +1978,7 @@ elif menu == "🌍 公開曲を見る":
                     compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
             
                     compare_list_field(
-                        "ローマ数字進行",
+                        "コード進行",
                         "chorus_chords_roman",
                         song,
                         my_song,
@@ -2000,48 +2000,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
