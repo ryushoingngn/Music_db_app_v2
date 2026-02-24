@@ -1947,7 +1947,7 @@ elif menu == "🌍 公開曲を見る":
                     with colA:
                         if st.button(
                             "🟢 不足分を一括補完",
-                            key=f"fill_{public_song['id']}"
+                            key=f"fill_{title}_{artist}_{selected_index if len(versions)>1 else 0}"
                         ):
     
                             fields = [
@@ -1970,7 +1970,7 @@ elif menu == "🌍 公開曲を見る":
                             save_and_refresh()
     
                     with colB:
-                        if st.button("🔴 公開曲データで全上書き", key=f"overwrite_{title}_{artist}_{selected_index}"):
+                        if st.button("🔴 公開曲データで全上書き", key=f"overwrite_{title}_{artist}_{selected_index if len(versions)>1 else 0}"):
     
                             for field in [
                                 "key", "bpm",
@@ -2017,6 +2017,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
