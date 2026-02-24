@@ -1844,9 +1844,7 @@ elif menu == "🌍 公開曲を見る":
                 st.markdown(f"### 🎵 {song['title']}")
                 st.write(f"🎤 {song['artist']}")
     
-            with col2:
-                if song.get("rating"):
-                    st.write("⭐" * int(song["rating"]))
+            
     
             # ======================
             # 🔽 詳細・比較（全曲表示可能）
@@ -2000,6 +1998,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
