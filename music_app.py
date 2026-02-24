@@ -1945,7 +1945,10 @@ elif menu == "🌍 公開曲を見る":
                     colA, colB = st.columns(2)
     
                     with colA:
-                        if st.button("🟢 不足分を一括補完", key=f"fill_{title}_{artist}_{selected_index}"):
+                        if st.button(
+                            "🟢 不足分を一括補完",
+                            key=f"fill_{public_song['id']}"
+                        ):
     
                             fields = [
                                 "key", "bpm",
@@ -2014,6 +2017,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
