@@ -405,6 +405,30 @@ def has_missing_info(my_song, public_song):
 
     return False
 
+def classify_public_song(public_song):
+    """
+    公開曲を
+    1. full
+    2. partial
+    3. none
+    に分類する
+    """
+
+    my_index = find_my_song(public_song["title"], public_song["artist"])
+
+    # 未登録
+    if my_index is None:
+        return "none"
+
+    my_song = data[my_index]
+
+    # 不足あり
+    if has_missing_info(my_song, public_song):
+        return "partial"
+
+    # 完全一致
+    return "full"
+
 def compare_field(label, field, public_song, my_song, my_index):
 
     pub_val = public_song.get(field)
@@ -1901,25 +1925,60 @@ elif menu == "🌍 公開曲を見る":
     # ==========================
     # 🎵 ② 表示
     # ==========================
+    # ==========================
+    # 🎵 ③ 登録状況ごとに分類
+    # ==========================
+    
+    group_full = {}
+    group_partial = {}
+    group_none = {}
+    
     for (title, artist), versions in grouped.items():
-
-        with st.expander(f"🎵 {title} - {artist}", expanded=False):
-
-            for i, v in enumerate(versions):
-        
-                if st.button(
-                    f"バージョン{i+1}",
-                    key=f"pub_{v['id']}"
-                ):
-                    st.session_state.public_detail_id = v["id"]
-                    st.rerun()
-        
+    
+        # 代表として最初のバージョンで判定
+        status = classify_public_song(versions[0])
+    
+        if status == "full":
+            group_full[(title, artist)] = versions
+        elif status == "partial":
+            group_partial[(title, artist)] = versions
+        else:
+            group_none[(title, artist)] = versions
+    
+    
+    def render_group(title_label, group_dict):
+    
+        if len(group_dict) == 0:
+            return
+    
+        st.subheader(title_label)
+    
+        for (title, artist), versions in group_dict.items():
+    
+            with st.expander(f"🎵 {title} - {artist}", expanded=False):
+    
+                for i, v in enumerate(versions):
+    
+                    if st.button(
+                        f"バージョン{i+1}（{v['username']}）",
+                        key=f"pub_{v['id']}"
+                    ):
+                        st.session_state.public_detail_id = v["id"]
+                        st.rerun()
+    
         st.divider()
+    
+    
+    # 表示
+    render_group("🟢 登録済み（全情報あり）", group_full)
+    render_group("🟡 登録済み（一部不足あり）", group_partial)
+    render_group("⚪ 未登録", group_none)
             
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
