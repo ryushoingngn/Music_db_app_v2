@@ -1903,23 +1903,24 @@ elif menu == "🌍 公開曲を見る":
     # ==========================
     for (title, artist), versions in grouped.items():
 
-        st.subheader(f"🎵 {title} - {artist}")
+        with st.expander(f"🎵 {title} - {artist}", expanded=False):
 
-        for i, v in enumerate(versions):
-
-            if st.button(
-                f"└ バージョン{i+1}（{v['username']}）",
-                key=f"pub_{v['id']}"
-            ):
-                st.session_state.public_detail_id = v["id"]
-                st.rerun()
-
+            for i, v in enumerate(versions):
+        
+                if st.button(
+                    f"バージョン{i+1}",
+                    key=f"pub_{v['id']}"
+                ):
+                    st.session_state.public_detail_id = v["id"]
+                    st.rerun()
+        
         st.divider()
             
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
