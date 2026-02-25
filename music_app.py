@@ -1030,6 +1030,9 @@ def show_public_song_card(title, artist, versions):
         st.markdown(f"### 🎵 {title}")
         st.markdown(f"**🎤 {artist}**")
 
+        # 👤 自分の登録状況
+        show_my_status_in_card(title, artist)
+
         st.divider()
 
         # ===== 公開バージョン一覧 =====
@@ -1052,6 +1055,33 @@ def show_public_song_card(title, artist, versions):
                 if st.button("👍", key=f"like_{v['id']}"):
                     toggle_like(v["id"])
                     st.rerun()
+# ======================
+# 👤 自分の登録状況表示
+# ======================
+def show_my_status_in_card(title, artist):
+
+    my_index = find_my_song(title, artist)
+
+    if my_index is None:
+        st.info("👤 あなたはまだこの曲を登録していません")
+        return
+
+    # 登録済み
+    my_song = data[my_index]
+
+    # 公開ベスト版取得（いいね最多）
+    best_version = get_best_public_version(title, artist)
+
+    if best_version and has_missing_info(my_song, best_version):
+        st.warning("🟡 あなたの曲は一部情報が不足しています")
+    else:
+        st.success("🟢 あなたはこの曲を登録済みです")
+
+    # 詳細へジャンプボタン
+    if st.button("👤 自分の曲を見る", key=f"my_jump_{title}_{artist}"):
+        st.session_state.prev_menu = "🌍 公開曲を見る"
+        st.session_state.detail_index = my_index
+        st.rerun()
 
 def edit_form(music, index):
     st.header("✏ 曲を編集")
@@ -2072,6 +2102,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
