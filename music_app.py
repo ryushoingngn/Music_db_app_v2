@@ -337,6 +337,29 @@ def load_public_music_all():
 
     return result
 
+def load_public_music_grouped():
+    public_songs = load_public_music_all()
+
+    grouped = {}
+
+    for song in public_songs:
+        key = (song["title"], song["artist"])
+
+        if key not in grouped:
+            grouped[key] = []
+
+        grouped[key].append(song)
+
+    # いいね順に並び替え
+    for key in grouped:
+        grouped[key] = sorted(
+            grouped[key],
+            key=lambda x: x["like_count"],
+            reverse=True
+        )
+
+    return grouped
+
 # ======================
 # ⭐ キャッシュ（大量データ高速化）
 # ======================
@@ -1975,89 +1998,67 @@ elif menu == "🌍 公開曲を見る":
 
     st.header("🌍 公開曲一覧")
 
-    public_songs = load_public_music_all()
+    grouped = load_public_music_grouped()
 
-    if len(public_songs) == 0:
-        st.info("公開曲はまだありません")
+    if len(grouped) == 0:
+        st.info("公開曲がまだありません")
         st.stop()
 
-    keyword = st.text_input("🔎 曲名 or アーティストで検索")
-
-    # ==========================
-    # 🎵 ① 曲単位でグループ化
-    # ==========================
-    grouped = {}
-
-    for m in public_songs:
-
-        if keyword:
-            if keyword.lower() not in m["title"].lower() and \
-               keyword.lower() not in m["artist"].lower():
-                continue
-
-        key = (m["title"], m["artist"])
-
-        if key not in grouped:
-            grouped[key] = []
-
-        grouped[key].append(m)
-
-    # ==========================
-    # 🎵 ② 表示
-    # ==========================
-    # ==========================
-    # 🎵 ③ 登録状況ごとに分類
-    # ==========================
-    
-    group_full = {}
-    group_partial = {}
-    group_none = {}
-    
     for (title, artist), versions in grouped.items():
-    
-        # 代表として最初のバージョンで判定
-        status = classify_public_song(versions[0])
-    
-        if status == "full":
-            group_full[(title, artist)] = versions
-        elif status == "partial":
-            group_partial[(title, artist)] = versions
-        else:
-            group_none[(title, artist)] = versions
-    
-    
-    def render_group(title_label, group_dict):
-    
-        if len(group_dict) == 0:
-            return
-    
-        st.subheader(title_label)
-    
-        for (title, artist), versions in group_dict.items():
-    
-            with st.expander(f"🎵 {title} - {artist}", expanded=False):
-    
-                for i, v in enumerate(versions):
-    
-                    if st.button(
-                        f"バージョン{i+1}（{v['username']}）",
-                        key=f"pub_{v['id']}"
-                    ):
-                        st.session_state.public_detail_id = v["id"]
-                        st.rerun()
-    
+
+        st.subheader(f"🎵 {title} - {artist}")
+
+        # ==============================
+        # 👤 自分の登録曲表示
+        # ==============================
+        my_index = find_my_song(title, artist)
+
+        if my_index is not None:
+            my_song = data[my_index]
+
+            with st.container():
+                st.markdown("**👤 あなたの登録情報**")
+                if my_song.get("key"):
+                    st.write("🎹 Key:", my_song["key"])
+                if my_song.get("bpm"):
+                    st.write("⏱ BPM:", my_song["bpm"])
+                if my_song.get("chorus_chords_roman"):
+                    st.write(
+                        "🎹 サビ進行:",
+                        progression_to_text(my_song["chorus_chords_roman"])
+                    )
+                st.divider()
+
+        # ==============================
+        # 🌍 公開バージョン一覧
+        # ==============================
+        for v in versions:
+
+            col1, col2, col3 = st.columns([5,1,1])
+
+            with col1:
+                if st.button(
+                    f"🌍 {v['username']} ver.",
+                    key=f"pub_{v['id']}"
+                ):
+                    st.session_state.public_detail_id = v["id"]
+                    st.rerun()
+
+            with col2:
+                st.write(f"❤️ {v['like_count']}")
+
+            with col3:
+                if st.button("👍", key=f"like_list_{v['id']}"):
+                    toggle_like(v["id"])
+                    st.rerun()
+
         st.divider()
-    
-    
-    # 表示
-    render_group("🟢 登録済み（全情報あり）", group_full)
-    render_group("🟡 登録済み（一部不足あり）", group_partial)
-    render_group("⚪ 未登録", group_none)
             
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
