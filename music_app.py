@@ -275,13 +275,12 @@ if "music_data" not in st.session_state:
 
 data = st.session_state.music_data
 
-def load_public_music():
+def load_public_music_all():
     conn = get_connection()
     c = conn.cursor(cursor_factory=RealDictCursor)
 
     c.execute("""
-        SELECT DISTINCT ON (m.title, m.artist, m.key, m.bpm, m.chorus_key, m.chorus_chords_raw)
-            m.*
+        SELECT m.*
         FROM music m
         JOIN users u ON m.username = u.username
         WHERE u.is_public = TRUE
@@ -296,7 +295,6 @@ def load_public_music():
 
     for row in rows:
 
-        # 🔁 転調 正規化
         mods = []
         if row["modulations"]:
             for x in row["modulations"].split(","):
@@ -306,6 +304,7 @@ def load_public_music():
 
         result.append({
             "id": row["id"],
+            "username": row["username"],   # ← 誰の投稿か重要
             "title": row["title"],
             "artist": row["artist"],
             "genre": row["genre"],
@@ -320,7 +319,6 @@ def load_public_music():
             "modulations": mods,
             "chorus_key": row["chorus_key"],
             "chorus_chords_raw": row["chorus_chords_raw"],
-            # 🔥 ここが今回の核心
             "chorus_chords_roman": row["chorus_chords_roman"].split(",")
                 if row["chorus_chords_roman"] else []
         })
@@ -1782,241 +1780,105 @@ elif menu == "🌍 公開曲を見る":
 
     st.header("🌍 公開されている曲")
 
-    public_songs = load_public_music()
+    public_songs = load_public_music_all()
 
     if len(public_songs) == 0:
         st.info("公開曲はまだありません")
         st.stop()
 
     # ==========================
-    # 🔎 検索欄
+    # 🔎 検索（絶対残す）
     # ==========================
 
-    col1, col2 = st.columns(2)
+    keyword = st.text_input("🔎 曲名 or アーティストで検索")
 
-    with col1:
-        search_title = st.text_input("🎵 曲名検索")
+    filtered = []
 
-    with col2:
-        search_artist = st.text_input("🎤 アーティスト検索")
-
-    # ==========================
-    # 🔎 フィルター処理
-    # ==========================
-
-    filtered_songs = []
-
-    for song in public_songs:
-
-        if search_title:
-            if search_title.lower() not in song["title"].lower():
+    for m in public_songs:
+        if keyword:
+            if keyword.lower() not in m["title"].lower() and \
+               keyword.lower() not in m["artist"].lower():
                 continue
+        filtered.append(m)
 
-        if search_artist:
-            if search_artist.lower() not in song["artist"].lower():
-                continue
-
-        filtered_songs.append(song)
-
-    st.divider()
-
-    if len(filtered_songs) == 0:
-        st.info("該当する曲がありません")
+    if len(filtered) == 0:
+        st.info("該当する公開曲がありません")
         st.stop()
 
-    st.write(f"{len(filtered_songs)} 件ヒット")
+    # ==========================
+    # 🎵 曲単位でまとめる
+    # ==========================
+
+    grouped = {}
+
+    for m in filtered:
+        key = (m["title"], m["artist"])
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(m)
 
     # ==========================
-    # 🎼 同曲をグループ化
+    # 表示
     # ==========================
-    
-    grouped_songs = {}
-    
-    for song in filtered_songs:
-        key = (song["title"], song["artist"])
-        grouped_songs.setdefault(key, []).append(song)
-    
+
+    for (title, artist), versions in grouped.items():
+
+        if st.button(f"🎵 {title} - {artist}  ({len(versions)}件)", key=f"pub_{title}_{artist}"):
+
+            st.session_state.public_detail = {
+                "title": title,
+                "artist": artist,
+                "versions": versions
+            }
+
+            st.rerun()
+
     # ==========================
-    # 🎵 表示（曲ごとにまとめる）
+    # 🔎 バージョン詳細
     # ==========================
-    
-    for (title, artist), versions in grouped_songs.items():
-    
-        with st.container():
-    
-            # --- タイトル表示 ---
-            st.markdown(f"### 🎵 {title}")
-            st.write(f"🎤 {artist}")
-    
-            with st.expander("▼ 詳細を見る"):
-    
-                # ==========================
-                # 🎚 バージョン選択
-                # ==========================
-    
-                if len(versions) > 1:
-    
-                    selected_index = st.radio(
-                        "バージョンを選択",
-                        options=range(len(versions)),
-                        format_func=lambda i: f"Version {i+1}",
-                        key=f"version_select_{title}_{artist}"
-                    )
-    
-                    song = versions[selected_index]
-    
-                else:
-                    song = versions[0]
-    
-                # 選択されたバージョンで判定
-                my_index = find_my_song(song["title"], song["artist"])
-                is_registered = my_index is not None
-    
-                # ==========================
-                # 🟢 未登録
-                # ==========================
-                if not is_registered:
-    
-                    if song.get("key"):
-                        st.write(f"🎹 Key: {song['key']}")
-    
-                    if song.get("bpm"):
-                        st.write(f"⏱ BPM: {song['bpm']}")
-    
-                    if song.get("vocal_min") or song.get("vocal_max"):
-                        vmin = song.get("vocal_min") or "?"
-                        vmax = song.get("vocal_max") or "?"
-                        st.write(f"🎤 Vocal Range: {vmin} ～ {vmax}")
-    
-                    if song.get("modulations"):
-                        mods = song["modulations"]
-                        if mods:
-                            mod_text = ", ".join([f"{'+' if m>0 else ''}{m}" for m in mods])
-                            st.write(f"🔁 転調: {mod_text}")
-    
-                    if song.get("chorus_key"):
-                        st.write(f"🎼 サビKey: {song['chorus_key']}")
-    
-                    if song.get("chorus_chords_roman"):
-                        roman = song["chorus_chords_roman"]
-                        if roman:
-                            st.write("🎹 サビ進行:", progression_to_text(roman))
-    
-                    if song.get("chorus_chords_raw"):
-                        st.write(f"🎸 実コード: {song['chorus_chords_raw']}")
-    
-                    st.divider()
-    
-                    st.info("この曲はまだ登録されていません")
-    
-                    if st.button("✅ このバージョンを保存", key=f"copy_{title}_{artist}_{selected_index if len(versions)>1 else 0}"):
-    
-                        new_music = {
-                            "title": song.get("title"),
-                            "artist": song.get("artist"),
-                            "genre": song.get("genre"),
-                            "themes": [],
-                            "rating": 0,
-                            "comment": "",
-                            "date_added": datetime.now().strftime("%Y-%m-%d"),
-                            "key": song.get("key"),
-                            "bpm": song.get("bpm"),
-                            "vocal_min": song.get("vocal_min"),
-                            "vocal_max": song.get("vocal_max"),
-                            "modulations": song.get("modulations", []),
-                            "chorus_key": song.get("chorus_key"),
-                            "chorus_chords_raw": song.get("chorus_chords_raw"),
-                            "chorus_chords_roman": song.get("chorus_chords_roman", []),
-                        }
-    
-                        data.append(new_music)
-                        st.session_state.msg = "公開曲を保存しました！"
-                        save_and_refresh()
-    
-                # ==========================
-                # 🟡 登録済み
-                # ==========================
-                else:
-    
-                    st.success("✔ 登録済み — 情報比較")
-    
-                    my_song = data[my_index]
-    
-                    colA, colB = st.columns(2)
-    
-                    with colA:
-                        if st.button(
-                            "🟢 不足分を一括補完",
-                            key=f"fill_{title}_{artist}_{selected_index if len(versions)>1 else 0}"
-                        ):
-    
-                            fields = [
-                                "key", "bpm",
-                                "vocal_min", "vocal_max",
-                                "chorus_key",
-                                "chorus_chords_raw",
-                                "chorus_chords_roman",
-                                "modulations"
-                            ]
-    
-                            for field in fields:
-                                my_val = my_song.get(field)
-                                pub_val = song.get(field)
-    
-                                if (my_val in [None, "", []]) and pub_val not in [None, "", []]:
-                                    data[my_index][field] = pub_val
-    
-                            st.session_state.msg = "不足分を補完しました！"
-                            save_and_refresh()
-    
-                    with colB:
-                        if st.button("🔴 公開曲データで全上書き", key=f"overwrite_{title}_{artist}_{selected_index if len(versions)>1 else 0}"):
-    
-                            for field in [
-                                "key", "bpm",
-                                "vocal_min", "vocal_max",
-                                "chorus_key",
-                                "chorus_chords_raw",
-                                "chorus_chords_roman",
-                                "modulations"
-                            ]:
-                                data[my_index][field] = song.get(field)
-    
-                            st.session_state.msg = "公開曲データで上書きしました！"
-                            save_and_refresh()
-    
-                    st.divider()
-    
-                    compare_field("Key", "key", song, my_song, my_index)
-                    compare_field("BPM", "bpm", song, my_song, my_index)
-                    compare_field("最低音", "vocal_min", song, my_song, my_index)
-                    compare_field("最高音", "vocal_max", song, my_song, my_index)
-                    compare_field("サビKey", "chorus_key", song, my_song, my_index)
-                    compare_field("実コード", "chorus_chords_raw", song, my_song, my_index)
-    
-                    compare_list_field(
-                        "コード進行",
-                        "chorus_chords_roman",
-                        song,
-                        my_song,
-                        my_index
-                    )
-    
-                    compare_list_field(
-                        "転調",
-                        "modulations",
-                        song,
-                        my_song,
-                        my_index,
-                        is_mod=True
-                    )
-    
+
+    if "public_detail" in st.session_state:
+
+        detail = st.session_state.public_detail
+
         st.divider()
+        st.subheader(f"🎧 {detail['title']} - {detail['artist']} の登録一覧")
+
+        for i, m in enumerate(detail["versions"]):
+
+            st.markdown(f"### 🌍 投稿者: {m['username']}")
+
+            if m.get("key"):
+                st.write("🎹 Key:", m["key"])
+
+            if m.get("bpm"):
+                st.write("⏱ BPM:", m["bpm"])
+
+            if m.get("chorus_chords_roman"):
+                st.write("🎹 サビ進行:", progression_to_text(m["chorus_chords_roman"]))
+
+            if st.button("この情報を取り込む", key=f"import_{i}"):
+
+                my_index = find_my_song(m["title"], m["artist"])
+
+                if my_index is None:
+                    data.append(m)
+                    st.session_state.msg = "曲を新規取り込みしました！"
+                else:
+                    data[my_index] = m
+                    st.session_state.msg = "既存曲を上書きしました！"
+
+                save_and_refresh()
+
+        if st.button("← 戻る（公開曲一覧へ）"):
+            del st.session_state.public_detail
+            st.rerun()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
