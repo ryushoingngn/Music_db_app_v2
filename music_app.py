@@ -1019,7 +1019,39 @@ def show_music_card(music, index):
         st.session_state.msg = "削除しました！"
         save_and_refresh()
 
+# ======================
+# 🌍 公開曲カード表示
+# ======================
+def show_public_song_card(title, artist, versions):
 
+    with st.container(border=True):
+
+        # ===== 曲タイトル =====
+        st.markdown(f"### 🎵 {title}")
+        st.markdown(f"**🎤 {artist}**")
+
+        st.divider()
+
+        # ===== 公開バージョン一覧 =====
+        for v in versions:
+
+            col1, col2, col3 = st.columns([4,1,1])
+
+            with col1:
+                if st.button(
+                    f"👤 {v['username']} ver.",
+                    key=f"pub_{v['id']}"
+                ):
+                    st.session_state.public_detail_id = v["id"]
+                    st.rerun()
+
+            with col2:
+                st.markdown(f"❤️ {v['like_count']}")
+
+            with col3:
+                if st.button("👍", key=f"like_{v['id']}"):
+                    toggle_like(v["id"])
+                    st.rerun()
 
 def edit_form(music, index):
     st.header("✏ 曲を編集")
@@ -1998,66 +2030,49 @@ elif menu == "🌍 公開曲を見る":
 
     st.header("🌍 公開曲一覧")
 
+    # ======================
+    # 🔎 公開曲検索
+    # ======================
+    search_word = st.text_input(
+        "🔎 曲名・アーティスト検索",
+        key="public_search"
+    )
+
     grouped = load_public_music_grouped()
 
     if len(grouped) == 0:
         st.info("公開曲がまだありません")
         st.stop()
 
+    # ======================
+    # 🔎 フィルター処理
+    # ======================
+    filtered = {}
+
     for (title, artist), versions in grouped.items():
 
-        st.subheader(f"🎵 {title} - {artist}")
+        if search_word:
+            if search_word.lower() not in title.lower() \
+               and search_word.lower() not in artist.lower():
+                continue
 
-        # ==============================
-        # 👤 自分の登録曲表示
-        # ==============================
-        my_index = find_my_song(title, artist)
+        filtered[(title, artist)] = versions
 
-        if my_index is not None:
-            my_song = data[my_index]
+    if len(filtered) == 0:
+        st.warning("該当する公開曲がありません")
+        st.stop()
 
-            with st.container():
-                st.markdown("**👤 あなたの登録情報**")
-                if my_song.get("key"):
-                    st.write("🎹 Key:", my_song["key"])
-                if my_song.get("bpm"):
-                    st.write("⏱ BPM:", my_song["bpm"])
-                if my_song.get("chorus_chords_roman"):
-                    st.write(
-                        "🎹 サビ進行:",
-                        progression_to_text(my_song["chorus_chords_roman"])
-                    )
-                st.divider()
-
-        # ==============================
-        # 🌍 公開バージョン一覧
-        # ==============================
-        for v in versions:
-
-            col1, col2, col3 = st.columns([5,1,1])
-
-            with col1:
-                if st.button(
-                    f"🌍 {v['username']} ver.",
-                    key=f"pub_{v['id']}"
-                ):
-                    st.session_state.public_detail_id = v["id"]
-                    st.rerun()
-
-            with col2:
-                st.write(f"❤️ {v['like_count']}")
-
-            with col3:
-                if st.button("👍", key=f"like_list_{v['id']}"):
-                    toggle_like(v["id"])
-                    st.rerun()
-
-        st.divider()
+    # ======================
+    # 🃏 カード表示
+    # ======================
+    for (title, artist), versions in filtered.items():
+        show_public_song_card(title, artist, versions)
             
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
