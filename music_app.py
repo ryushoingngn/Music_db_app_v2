@@ -1879,6 +1879,11 @@ elif menu == "🌍 公開曲を見る":
 
     keyword = st.text_input("🔎 曲名 or アーティストで検索")
 
+    # ==========================
+    # 🎵 ① 曲単位でグループ化
+    # ==========================
+    grouped = {}
+
     for m in public_songs:
 
         if keyword:
@@ -1886,17 +1891,36 @@ elif menu == "🌍 公開曲を見る":
                keyword.lower() not in m["artist"].lower():
                 continue
 
-        if st.button(
-            f"🎵 {m['title']} - {m['artist']} ({m['username']})",
-            key=f"pub_{m['id']}"
-        ):
-            st.session_state.public_detail_id = m["id"]
-            st.rerun()
+        key = (m["title"], m["artist"])
+
+        if key not in grouped:
+            grouped[key] = []
+
+        grouped[key].append(m)
+
+    # ==========================
+    # 🎵 ② 表示
+    # ==========================
+    for (title, artist), versions in grouped.items():
+
+        st.subheader(f"🎵 {title} - {artist}")
+
+        for i, v in enumerate(versions):
+
+            if st.button(
+                f"└ バージョン{i+1}（{v['username']}）",
+                key=f"pub_{v['id']}"
+            ):
+                st.session_state.public_detail_id = v["id"]
+                st.rerun()
+
+        st.divider()
             
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
