@@ -59,6 +59,15 @@ def init_db():
     ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT TRUE
     """)
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS likes (
+        id SERIAL PRIMARY KEY,
+        song_id INTEGER,
+        username TEXT,
+        UNIQUE(song_id, username)
+    )
+    """)
+
     c.execute("CREATE INDEX IF NOT EXISTS idx_music_title ON music(title)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_music_artist ON music(artist)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_music_user ON music(username)")
@@ -280,12 +289,14 @@ def load_public_music_all():
     c = conn.cursor(cursor_factory=RealDictCursor)
 
     c.execute("""
-        SELECT m.*
+        SELECT m.*, COUNT(l.id) as like_count
         FROM music m
         JOIN users u ON m.username = u.username
+        LEFT JOIN likes l ON m.id = l.song_id
         WHERE u.is_public = TRUE
         AND m.username != %s
-        ORDER BY m.title, m.artist
+        GROUP BY m.id
+        ORDER BY m.title, m.artist, like_count DESC
     """, (st.session_state.user,))
 
     rows = c.fetchall()
@@ -307,6 +318,7 @@ def load_public_music_all():
             "username": row["username"],   # ← 誰の投稿か重要
             "title": row["title"],
             "artist": row["artist"],
+            "like_count": row["like_count"],
             "genre": row["genre"],
             "themes": row["themes"].split(",") if row["themes"] else [],
             "rating": row["rating"],
@@ -406,27 +418,26 @@ def has_missing_info(my_song, public_song):
     return False
 
 def classify_public_song(public_song):
-    """
-    公開曲を
-    1. full
-    2. partial
-    3. none
-    に分類する
-    """
 
     my_index = find_my_song(public_song["title"], public_song["artist"])
 
-    # 未登録
     if my_index is None:
         return "none"
 
     my_song = data[my_index]
 
-    # 不足あり
-    if has_missing_info(my_song, public_song):
+    # 🔥 代表バージョン取得
+    best_version = get_best_public_version(
+        public_song["title"],
+        public_song["artist"]
+    )
+
+    if best_version is None:
+        return "full"
+
+    if has_missing_info(my_song, best_version):
         return "partial"
 
-    # 完全一致
     return "full"
 
 def compare_field(label, field, public_song, my_song, my_index):
@@ -490,6 +501,25 @@ def compare_list_field(label, field, public_song, my_song, my_index, is_mod=Fals
                 data[my_index][field] = pub_val or []
                 st.session_state.msg = f"{label} を更新しました"
                 save_and_refresh()
+
+
+# ======================
+# 代表曲を決める関数              
+# ======================
+def get_best_public_version(title, artist):
+    public_songs = load_public_music_all()
+
+    same_songs = [
+        m for m in public_songs
+        if m["title"].lower() == title.lower()
+        and m["artist"].lower() == artist.lower()
+    ]
+
+    if not same_songs:
+        return None
+
+    # いいね数最大を返す
+    return max(same_songs, key=lambda x: x["like_count"])
 
 # ======================
 # 🎤 音名 → 数値変換（音域検索用）
@@ -846,8 +876,46 @@ def roman_keyboard(session_key):
 
     if col3.button("clear", key=f"{session_key}_clear"):
         clear_all()
+#==================
+# いいね数取得
+#==================
+def get_like_count(song_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM likes WHERE song_id = %s", (song_id,))
+    count = c.fetchone()[0]
+    conn.close()
+    return count
 
 
+#==================
+# いいね切り替え
+#==================
+def toggle_like(song_id):
+    conn = get_connection()
+    c = conn.cursor()
+
+    # 既にいいねしているか確認
+    c.execute("""
+        SELECT 1 FROM likes
+        WHERE song_id = %s AND username = %s
+    """, (song_id, st.session_state.user))
+
+    exists = c.fetchone()
+
+    if exists:
+        c.execute("""
+            DELETE FROM likes
+            WHERE song_id = %s AND username = %s
+        """, (song_id, st.session_state.user))
+    else:
+        c.execute("""
+            INSERT INTO likes (song_id, username)
+            VALUES (%s, %s)
+        """, (song_id, st.session_state.user))
+
+    conn.commit()
+    conn.close()
 
 # ======================
 # ⭐ 通知メッセージ管理（追加）
@@ -1099,6 +1167,18 @@ def show_public_detail_page(song_id):
     st.write(f"👤 投稿者: {target['username']}")
     st.write(f"🎤 アーティスト: {target['artist']}")
 
+    like_count = get_like_count(target["id"])
+
+    col1, col2 = st.columns([1,3])
+    
+    with col1:
+        if st.button("❤️", key=f"like_{target['id']}"):
+            toggle_like(target["id"])
+            st.rerun()
+    
+    with col2:
+        st.write(f"{like_count} いいね")
+    
     if target.get("key"):
         st.write("🎹 Key:", target["key"])
 
@@ -1978,6 +2058,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
