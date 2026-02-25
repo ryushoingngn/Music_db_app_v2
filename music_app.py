@@ -737,6 +737,25 @@ def validate_song_input(
             errors.append("日付は YYYY-MM-DD 形式で入力してください")
 
     return errors
+    
+#==============
+# 分析計だけコピー
+#==============
+def merge_public_into_my_song(my_song, public_song):
+
+    # 上書きする情報
+    fields_to_copy = [
+        "key", "bpm", "vocal_min", "vocal_max",
+        "modulations",
+        "chorus_key",
+        "chorus_chords_raw",
+        "chorus_chords_roman"
+    ]
+
+    for f in fields_to_copy:
+        my_song[f] = public_song.get(f)
+
+    return my_song
 
 # ======================
 # 🎹 ローマ数字キーボード（2段＋拡張）
@@ -1031,6 +1050,77 @@ def show_detail_page(index):
             del st.session_state.detail_index   # ← 先に削除！！
             jump_to_menu(prev)                  # ← rerunはこれだけ
 
+# ======================
+# 🌍 公開曲詳細ページ
+# ======================
+def show_public_detail_page(song_id):
+
+    public_songs = load_public_music_all()
+
+    # ID一致の曲を探す
+    target = None
+    for m in public_songs:
+        if m["id"] == song_id:
+            target = m
+            break
+
+    if target is None:
+        del st.session_state.public_detail_id
+        jump_to_menu("🌍 公開曲を見る")
+        return
+
+    st.header("🌍 公開曲詳細")
+
+    st.subheader(f"🎵 {target['title']}")
+    st.write(f"👤 投稿者: {target['username']}")
+    st.write(f"🎤 アーティスト: {target['artist']}")
+
+    if target.get("key"):
+        st.write("🎹 Key:", target["key"])
+
+    if target.get("bpm"):
+        st.write("⏱ BPM:", target["bpm"])
+
+    if target.get("chorus_chords_roman"):
+        st.write("🎹 サビ進行:", progression_to_text(target["chorus_chords_roman"]))
+
+    st.divider()
+
+    # ⭐ 取り込みボタン
+    if st.button("📥 この曲を自分のDBに取り込む"):
+
+        my_index = find_my_song(target["title"], target["artist"])
+
+        new_song = merge_public_into_my_song({
+            "title": target["title"],
+            "artist": target["artist"],
+            "genre": target.get("genre"),
+            "themes": target.get("themes", []),
+            "rating": target.get("rating", 3),
+            "comment": target.get("comment"),
+            "date_added": datetime.now().strftime("%Y-%m-%d"),
+            "key": "",
+            "bpm": "",
+            "vocal_min": "",
+            "vocal_max": "",
+            "modulations": [],
+            "chorus_key": "",
+            "chorus_chords_raw": "",
+            "chorus_chords_roman": [],
+        }, target)
+
+        if my_index is None:
+            data.append(new_song)
+            st.session_state.msg = "取り込みました！"
+        else:
+            data[my_index] = new_song
+            st.session_state.msg = "既存曲を更新しました！"
+
+        save_and_refresh()
+
+    if st.button("← 戻る"):
+        del st.session_state.public_detail_id
+        jump_to_menu("🌍 公開曲を見る")
 
 # ======================
 # ⭐ メニュー遷移システム（超重要）
@@ -1148,6 +1238,11 @@ if "edit_index" in st.session_state:
 # ② 詳細画面
 if "detail_index" in st.session_state:
     show_detail_page(st.session_state.detail_index)
+    st.stop()
+
+# 🌍 公開曲詳細画面
+if "public_detail_id" in st.session_state:
+    show_public_detail_page(st.session_state.public_detail_id)
     st.stop()
 
 # ======================
@@ -1772,13 +1867,9 @@ elif menu == "年別まとめ":
 
 
 
-# ======================
-# 公開曲
-# ======================
-
 elif menu == "🌍 公開曲を見る":
 
-    st.header("🌍 公開されている曲")
+    st.header("🌍 公開曲一覧")
 
     public_songs = load_public_music_all()
 
@@ -1786,98 +1877,27 @@ elif menu == "🌍 公開曲を見る":
         st.info("公開曲はまだありません")
         st.stop()
 
-    # ==========================
-    # 🔎 検索（絶対残す）
-    # ==========================
-
     keyword = st.text_input("🔎 曲名 or アーティストで検索")
 
-    filtered = []
-
     for m in public_songs:
+
         if keyword:
             if keyword.lower() not in m["title"].lower() and \
                keyword.lower() not in m["artist"].lower():
                 continue
-        filtered.append(m)
 
-    if len(filtered) == 0:
-        st.info("該当する公開曲がありません")
-        st.stop()
-
-    # ==========================
-    # 🎵 曲単位でまとめる
-    # ==========================
-
-    grouped = {}
-
-    for m in filtered:
-        key = (m["title"], m["artist"])
-        if key not in grouped:
-            grouped[key] = []
-        grouped[key].append(m)
-
-    # ==========================
-    # 表示
-    # ==========================
-
-    for (title, artist), versions in grouped.items():
-
-        if st.button(f"🎵 {title} - {artist}  ({len(versions)}件)", key=f"pub_{title}_{artist}"):
-
-            st.session_state.public_detail = {
-                "title": title,
-                "artist": artist,
-                "versions": versions
-            }
-
+        if st.button(
+            f"🎵 {m['title']} - {m['artist']} ({m['username']})",
+            key=f"pub_{m['id']}"
+        ):
+            st.session_state.public_detail_id = m["id"]
             st.rerun()
-
-    # ==========================
-    # 🔎 バージョン詳細
-    # ==========================
-
-    if "public_detail" in st.session_state:
-
-        detail = st.session_state.public_detail
-
-        st.divider()
-        st.subheader(f"🎧 {detail['title']} - {detail['artist']} の登録一覧")
-
-        for i, m in enumerate(detail["versions"]):
-
-            st.markdown(f"### 🌍 投稿者: {m['username']}")
-
-            if m.get("key"):
-                st.write("🎹 Key:", m["key"])
-
-            if m.get("bpm"):
-                st.write("⏱ BPM:", m["bpm"])
-
-            if m.get("chorus_chords_roman"):
-                st.write("🎹 サビ進行:", progression_to_text(m["chorus_chords_roman"]))
-
-            if st.button("この情報を取り込む", key=f"import_{i}"):
-
-                my_index = find_my_song(m["title"], m["artist"])
-
-                if my_index is None:
-                    data.append(m)
-                    st.session_state.msg = "曲を新規取り込みしました！"
-                else:
-                    data[my_index] = m
-                    st.session_state.msg = "既存曲を上書きしました！"
-
-                save_and_refresh()
-
-        if st.button("← 戻る（公開曲一覧へ）"):
-            del st.session_state.public_detail
-            st.rerun()
-
+            
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
