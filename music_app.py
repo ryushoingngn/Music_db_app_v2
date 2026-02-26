@@ -1051,28 +1051,25 @@ def show_music_card(music, index):
 # ======================
 def show_public_song_card(title, artist, versions):
 
-    # ⭐ 代表公開版（いいね最多）
     best_version = versions[0]
 
     status = classify_public_song(best_version)
 
     icon_map = {
-        "none": "⚪",     # 未登録
-        "partial": "🟡",  # 不足あり
-        "full": "🟢"      # 完全登録
+        "none": "⚪",
+        "partial": "🟡",
+        "full": "🟢"
     }
 
     icon = icon_map.get(status, "⚪")
 
-    # 🆕 タイトルにアイコン表示
     with st.expander(
         f"{icon} 🎵 {title} - {artist}（{len(versions)}件）",
         expanded=False
     ):
 
-        show_my_status_in_card(title, artist)
-
-        show_side_by_side_compare(title, artist)
+        show_my_status_in_card(title, artist, best_version)
+        show_side_by_side_compare(title, artist, best_version)
 
         st.divider()
 
@@ -1098,7 +1095,7 @@ def show_public_song_card(title, artist, versions):
 # ======================
 # 👤 自分の登録状況表示
 # ======================
-def show_my_status_in_card(title, artist):
+def show_my_status_in_card(title, artist, best_version):
 
     my_index = find_my_song(title, artist)
 
@@ -1106,19 +1103,13 @@ def show_my_status_in_card(title, artist):
         st.info("👤 あなたはまだこの曲を登録していません")
         return
 
-    # 登録済み
     my_song = data[my_index]
 
-    # 公開ベスト版取得（いいね最多）
-    # versionsは外から渡せないので削除
-    best_version = None
-
-    if has_missing_info(my_song, my_song):
+    if has_missing_info(my_song, best_version):
         st.warning("🟡 あなたの曲は一部情報が不足しています")
     else:
         st.success("🟢 あなたはこの曲を登録済みです")
 
-    # 詳細へジャンプボタン
     if st.button("👤 自分の曲を見る", key=f"my_jump_{title}_{artist}"):
         st.session_state.prev_menu = "🌍 公開曲を見る"
         st.session_state.detail_index = my_index
@@ -1127,16 +1118,11 @@ def show_my_status_in_card(title, artist):
 # ======================
 # 🥇 公開1位 vs 自分 横並び比較
 # ======================
-def show_side_by_side_compare(title, artist):
+def show_side_by_side_compare(title, artist, best_version):
 
     my_index = find_my_song(title, artist)
 
     if my_index is None:
-        return
-
-    return  # 一旦比較機能停止
-
-    if best_version is None:
         return
 
     my_song = data[my_index]
@@ -1170,9 +1156,7 @@ def show_side_by_side_compare(title, artist):
         my_index
     )
 
-    # ==========================
-    # ⭐ 不足分一括追加ボタン
-    # ==========================
+    # ===== 一括追加 =====
     if has_missing_info(my_song, best_version):
 
         st.divider()
@@ -2207,6 +2191,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
