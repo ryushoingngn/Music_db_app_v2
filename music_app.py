@@ -1026,18 +1026,18 @@ def show_public_song_card(title, artist, versions):
 
     with st.container(border=True):
 
-        # ===== 曲タイトル =====
         st.markdown(f"### 🎵 {title}")
         st.markdown(f"**🎤 {artist}**")
 
         # 👤 自分の登録状況
         show_my_status_in_card(title, artist)
 
+        # ⭐ ここ追加
+        show_side_by_side_compare(title, artist)
+
         st.divider()
 
-        # ===== 公開バージョン一覧 =====
         for v in versions:
-
             col1, col2, col3 = st.columns([4,1,1])
 
             with col1:
@@ -1055,6 +1055,8 @@ def show_public_song_card(title, artist, versions):
                 if st.button("👍", key=f"like_{v['id']}"):
                     toggle_like(v["id"])
                     st.rerun()
+
+
 # ======================
 # 👤 自分の登録状況表示
 # ======================
@@ -1082,6 +1084,52 @@ def show_my_status_in_card(title, artist):
         st.session_state.prev_menu = "🌍 公開曲を見る"
         st.session_state.detail_index = my_index
         st.rerun()
+
+# ======================
+# 🥇 公開1位 vs 自分 横並び比較
+# ======================
+def show_side_by_side_compare(title, artist):
+
+    my_index = find_my_song(title, artist)
+
+    if my_index is None:
+        return
+
+    best_version = get_best_public_version(title, artist)
+
+    if best_version is None:
+        return
+
+    my_song = data[my_index]
+
+    st.divider()
+    st.markdown("### 🥇 公開1位 vs 👤 あなた")
+
+    # ===== 単一フィールド =====
+    compare_field("Key", "key", best_version, my_song, my_index)
+    compare_field("BPM", "bpm", best_version, my_song, my_index)
+    compare_field("最低音", "vocal_min", best_version, my_song, my_index)
+    compare_field("最高音", "vocal_max", best_version, my_song, my_index)
+    compare_field("サビKey", "chorus_key", best_version, my_song, my_index)
+    compare_field("実コード", "chorus_chords_raw", best_version, my_song, my_index)
+
+    # ===== リスト系 =====
+    compare_list_field(
+        "転調",
+        "modulations",
+        best_version,
+        my_song,
+        my_index,
+        is_mod=True
+    )
+
+    compare_list_field(
+        "ローマ数字",
+        "chorus_chords_roman",
+        best_version,
+        my_song,
+        my_index
+    )
 
 def edit_form(music, index):
     st.header("✏ 曲を編集")
@@ -2102,6 +2150,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
