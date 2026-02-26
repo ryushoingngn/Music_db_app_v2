@@ -386,6 +386,46 @@ def get_year_dict(data):
 
     return year_dict
 
+@st.cache_data
+def search_public_music(artist_query="", title_query="", limit=50):
+
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
+
+    query = """
+        SELECT m.*, COUNT(l.id) as like_count
+        FROM music m
+        JOIN users u ON m.username = u.username
+        LEFT JOIN likes l ON m.id = l.song_id
+        WHERE u.is_public = TRUE
+        AND m.username != %s
+    """
+
+    params = [st.session_state.user]
+
+    if artist_query:
+        query += " AND m.artist ILIKE %s"
+        params.append(f"%{artist_query}%")
+
+    if title_query:
+        query += " AND m.title ILIKE %s"
+        params.append(f"%{title_query}%")
+
+    query += """
+        GROUP BY m.id
+        ORDER BY like_count DESC
+        LIMIT %s
+    """
+
+    params.append(limit)
+
+    c.execute(query, tuple(params))
+    rows = c.fetchall()
+    conn.close()
+
+    return rows
+
+
 
 def save_and_refresh():
     save_music(data)
@@ -529,20 +569,10 @@ def compare_list_field(label, field, public_song, my_song, my_index, is_mod=Fals
 # ======================
 # 代表曲を決める関数              
 # ======================
-def get_best_public_version(title, artist):
-    public_songs = load_public_music_all()
-
-    same_songs = [
-        m for m in public_songs
-        if m["title"].lower() == title.lower()
-        and m["artist"].lower() == artist.lower()
-    ]
-
-    if not same_songs:
+def get_best_public_version_from_versions(versions):
+    if not versions:
         return None
-
-    # いいね数最大を返す
-    return max(same_songs, key=lambda x: x["like_count"])
+    return max(versions, key=lambda x: x["like_count"])
 
 # ======================
 # 🎤 音名 → 数値変換（音域検索用）
@@ -2141,50 +2171,45 @@ elif menu == "年別まとめ":
 
 elif menu == "🌍 公開曲を見る":
 
-    st.header("🌍 公開曲一覧")
+    st.header("🌍 公開曲検索")
 
-    # ======================
-    # 🔎 公開曲検索
-    # ======================
-    search_word = st.text_input(
-        "🔎 曲名・アーティスト検索",
-        key="public_search"
+    artist_query = st.text_input("アーティスト名")
+    title_query = st.text_input("曲名")
+
+    if "public_search_clicked" not in st.session_state:
+        st.session_state.public_search_clicked = False
+
+    if st.button("🔍 検索"):
+        st.session_state.public_search_clicked = True
+
+    if not st.session_state.public_search_clicked:
+        st.info("検索ボタンを押してください")
+        st.stop()
+
+    results = search_public_music(
+        artist_query=artist_query,
+        title_query=title_query,
+        limit=50
     )
 
-    grouped = load_public_music_grouped()
-
-    if len(grouped) == 0:
-        st.info("公開曲がまだありません")
+    if not results:
+        st.warning("該当曲なし")
         st.stop()
 
-    # ======================
-    # 🔎 フィルター処理
-    # ======================
-    filtered = {}
+    # グループ化（同タイトルまとめ）
+    grouped = {}
+    for row in results:
+        key = (row["title"], row["artist"])
+        grouped.setdefault(key, []).append(row)
 
     for (title, artist), versions in grouped.items():
-
-        if search_word:
-            if search_word.lower() not in title.lower() \
-               and search_word.lower() not in artist.lower():
-                continue
-
-        filtered[(title, artist)] = versions
-
-    if len(filtered) == 0:
-        st.warning("該当する公開曲がありません")
-        st.stop()
-
-    # ======================
-    # 🃏 カード表示
-    # ======================
-    for (title, artist), versions in filtered.items():
         show_public_song_card(title, artist, versions)
             
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
