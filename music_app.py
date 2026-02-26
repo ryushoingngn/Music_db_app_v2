@@ -490,10 +490,7 @@ def classify_public_song(public_song):
     my_song = data[my_index]
 
     # 🔥 代表バージョン取得
-    best_version = get_best_public_version(
-        public_song["title"],
-        public_song["artist"]
-    )
+    best_version = public_song
 
     if best_version is None:
         return "full"
@@ -1113,9 +1110,10 @@ def show_my_status_in_card(title, artist):
     my_song = data[my_index]
 
     # 公開ベスト版取得（いいね最多）
-    best_version = get_best_public_version(title, artist)
+    # versionsは外から渡せないので削除
+    best_version = None
 
-    if best_version and has_missing_info(my_song, best_version):
+    if has_missing_info(my_song, my_song):
         st.warning("🟡 あなたの曲は一部情報が不足しています")
     else:
         st.success("🟢 あなたはこの曲を登録済みです")
@@ -1136,7 +1134,7 @@ def show_side_by_side_compare(title, artist):
     if my_index is None:
         return
 
-    best_version = get_best_public_version(title, artist)
+    return  # 一旦比較機能停止
 
     if best_version is None:
         return
@@ -2209,6 +2207,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
