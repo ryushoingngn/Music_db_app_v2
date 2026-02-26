@@ -1332,15 +1332,9 @@ def show_public_detail_page(song_id):
             target = m
             break
 
-    # ID一致の曲を探す
-    target = None
-    for m in public_songs:
-        if m["id"] == song_id:
-            target = m
-            break
-
     if target is None:
-        del st.session_state.public_detail_id
+        if "public_detail_id" in st.session_state:
+            del st.session_state.public_detail_id
         jump_to_menu("🌍 公開曲を見る")
         return
 
@@ -1361,7 +1355,7 @@ def show_public_detail_page(song_id):
     
     with col2:
         st.write(f"{like_count} いいね")
-    
+
     if target.get("key"):
         st.write("🎹 Key:", target["key"])
 
@@ -1373,7 +1367,7 @@ def show_public_detail_page(song_id):
 
     st.divider()
 
-    # ⭐ 取り込みボタン
+    # ⭐ 取り込み
     if st.button("📥 この曲を自分のDBに取り込む"):
 
         my_index = find_my_song(target["title"], target["artist"])
@@ -2158,22 +2152,42 @@ elif menu == "🌍 公開曲を見る":
     st.header("🌍 公開曲検索")
 
     # -----------------------------
-    # 🔹 session_state 初期化
+    # 初期化
     # -----------------------------
     if "public_search_result" not in st.session_state:
-        st.session_state.public_search_result = None
+        st.session_state.public_search_result = []
 
     if "public_search_done" not in st.session_state:
         st.session_state.public_search_done = False
 
+    if "public_artist_query" not in st.session_state:
+        st.session_state.public_artist_query = ""
+
+    if "public_title_query" not in st.session_state:
+        st.session_state.public_title_query = ""
+
 
     # -----------------------------
-    # 🔹 検索フォーム
+    # 入力欄（保存付き）
     # -----------------------------
-    artist_query = st.text_input("アーティスト名")
-    title_query = st.text_input("曲名")
+    artist_query = st.text_input(
+        "アーティスト名",
+        value=st.session_state.public_artist_query
+    )
 
+    title_query = st.text_input(
+        "曲名",
+        value=st.session_state.public_title_query
+    )
+
+
+    # -----------------------------
+    # 検索ボタン
+    # -----------------------------
     if st.button("🔍 検索"):
+
+        st.session_state.public_artist_query = artist_query
+        st.session_state.public_title_query = title_query
 
         results = search_public_music(
             artist_query=artist_query,
@@ -2181,13 +2195,12 @@ elif menu == "🌍 公開曲を見る":
             limit=50
         )
 
-        # 検索結果を保存
         st.session_state.public_search_result = results
         st.session_state.public_search_done = True
 
 
     # -----------------------------
-    # 🔹 まだ検索していない場合
+    # 未検索
     # -----------------------------
     if not st.session_state.public_search_done:
         st.info("検索ボタンを押してください")
@@ -2196,17 +2209,13 @@ elif menu == "🌍 公開曲を見る":
 
     results = st.session_state.public_search_result
 
-
-    # -----------------------------
-    # 🔹 検索結果なし
-    # -----------------------------
     if not results:
         st.warning("該当曲なし")
         st.stop()
 
 
     # -----------------------------
-    # 🔹 グループ化（同タイトルまとめ）
+    # グループ化
     # -----------------------------
     grouped = {}
 
@@ -2214,10 +2223,6 @@ elif menu == "🌍 公開曲を見る":
         key = (row["title"], row["artist"])
         grouped.setdefault(key, []).append(row)
 
-
-    # -----------------------------
-    # 🔹 表示
-    # -----------------------------
     for (title, artist), versions in grouped.items():
         show_public_song_card(title, artist, versions)
             
@@ -2225,6 +2230,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
