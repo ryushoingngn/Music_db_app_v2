@@ -1099,11 +1099,25 @@ def show_public_song_card(title, artist, versions):
     # 🔥 重複削除
     grouped_versions = group_versions_remove_duplicates(versions)
 
+    # 🔥 公開1位（like合算後の1位）
+    best_version = grouped_versions[0]["data"] if grouped_versions else None
+
     with st.expander(
         f"🎵 {title} - {artist}（{len(grouped_versions)} Version）",
         expanded=False
     ):
 
+        # ==========================
+        # 👤 自分の登録状況表示
+        # ==========================
+        if best_version:
+            show_my_status_in_card(title, artist, best_version)
+
+        st.divider()
+
+        # ==========================
+        # Version一覧
+        # ==========================
         for i, item in enumerate(grouped_versions, start=1):
 
             v = item["data"]
@@ -1122,6 +1136,12 @@ def show_public_song_card(title, artist, versions):
 
             with col2:
                 st.markdown(f"❤️ {total_like}")
+
+        # ==========================
+        # 🥇 横並び比較（復活）
+        # ==========================
+        if best_version:
+            show_side_by_side_compare(title, artist, best_version)
                 
 # ======================
 # 👤 自分の登録状況表示
@@ -2243,6 +2263,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
