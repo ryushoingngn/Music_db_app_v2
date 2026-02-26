@@ -360,6 +360,51 @@ def load_public_music_grouped():
 
     return grouped
 
+def group_versions_remove_duplicates(versions):
+    """
+    theme / rating / date_added を除いた
+    全フィールドが同じものを1つにまとめる
+    """
+
+    unique_map = {}
+
+    for v in versions:
+
+        # 🔥 比較対象キー（除外3項目）
+        compare_key = (
+            v.get("title"),
+            v.get("artist"),
+            v.get("genre"),
+            v.get("comment"),
+            v.get("key"),
+            v.get("bpm"),
+            v.get("vocal_min"),
+            v.get("vocal_max"),
+            tuple(sorted(v.get("modulations", []))),
+            v.get("chorus_key"),
+            v.get("chorus_chords_raw"),
+            tuple(v.get("chorus_chords_roman", [])),
+        )
+
+        if compare_key not in unique_map:
+            unique_map[compare_key] = {
+                "data": v,
+                "like_count": v["like_count"],
+                "count": 1
+            }
+        else:
+            unique_map[compare_key]["like_count"] += v["like_count"]
+            unique_map[compare_key]["count"] += 1
+
+    # like順で並び替え
+    result = sorted(
+        unique_map.values(),
+        key=lambda x: x["like_count"],
+        reverse=True
+    )
+
+    return result
+
 # ======================
 # ⭐ キャッシュ（大量データ高速化）
 # ======================
@@ -1051,44 +1096,33 @@ def show_music_card(music, index):
 # ======================
 def show_public_song_card(title, artist, versions):
 
-    best_version = versions[0]
-
-    status = classify_public_song(best_version)
-
-    icon_map = {
-        "none": "⚪",
-        "partial": "🟡",
-        "full": "🟢"
-    }
-
-    icon = icon_map.get(status, "⚪")
+    # 🔥 重複削除
+    grouped_versions = group_versions_remove_duplicates(versions)
 
     with st.expander(
-        f"{icon} 🎵 {title} - {artist}（{len(versions)}件）",
+        f"🎵 {title} - {artist}（{len(grouped_versions)} Version）",
         expanded=False
     ):
 
-        show_my_status_in_card(title, artist, best_version)
-        show_side_by_side_compare(title, artist, best_version)
+        for i, item in enumerate(grouped_versions, start=1):
 
-        st.divider()
+            v = item["data"]
+            total_like = item["like_count"]
+            same_count = item["count"]
 
-        for v in versions:
-            col1, col2, col3 = st.columns([4,1,1])
+            col1, col2 = st.columns([4,1])
 
             with col1:
                 if st.button(
-                    f"👤 {v['username']} ver.",
-                    key=f"pub_{v['id']}"
+                    f"Version {i}（{same_count}人登録）",
+                    key=f"pub_ver_{title}_{artist}_{i}"
                 ):
-                    st.session_state.public_detail_id = v["id"]
+                    st.session_state.public_detail_data = v
                     st.rerun()
 
             with col2:
-                st.markdown(f"❤️ {v['like_count']}")
-
-            
-
+                st.markdown(f"❤️ {total_like}")
+                
 # ======================
 # 👤 自分の登録状況表示
 # ======================
@@ -1322,39 +1356,26 @@ def show_detail_page(index):
 # ======================
 # 🌍 公開曲詳細ページ
 # ======================
-def show_public_detail_page(song_id):
+def show_public_detail_page(_):
 
-    results = st.session_state.get("public_search_result", [])
-
-    target = None
-    for m in results:
-        if m["id"] == song_id:
-            target = m
-            break
+    target = st.session_state.get("public_detail_data")
 
     if target is None:
-        if "public_detail_id" in st.session_state:
-            del st.session_state.public_detail_id
         jump_to_menu("🌍 公開曲を見る")
         return
 
     st.header("🌍 公開曲詳細")
 
     st.subheader(f"🎵 {target['title']}")
-    st.write(f"👤 投稿者: {target['username']}")
     st.write(f"🎤 アーティスト: {target['artist']}")
 
-    like_count = get_like_count(target["id"])
+    # ===== 全情報表示（除外3項目） =====
 
-    col1, col2 = st.columns([1,3])
-    
-    with col1:
-        if st.button("❤️", key=f"like_{target['id']}"):
-            toggle_like(target["id"])
-            st.rerun()
-    
-    with col2:
-        st.write(f"{like_count} いいね")
+    if target.get("genre"):
+        st.write("🎼 Genre:", target["genre"])
+
+    if target.get("themes"):
+        st.write("🏷 Themes:", ", ".join(target["themes"]))
 
     if target.get("key"):
         st.write("🎹 Key:", target["key"])
@@ -1362,45 +1383,37 @@ def show_public_detail_page(song_id):
     if target.get("bpm"):
         st.write("⏱ BPM:", target["bpm"])
 
+    if target.get("vocal_min") or target.get("vocal_max"):
+        st.write(
+            "🎤 Vocal Range:",
+            f"{target.get('vocal_min','?')} ～ {target.get('vocal_max','?')}"
+        )
+
+    if target.get("modulations"):
+        mod_text = ", ".join(
+            [f"{'+' if m>0 else ''}{m}" for m in target["modulations"]]
+        )
+        st.write("🔁 転調:", mod_text)
+
+    if target.get("chorus_key"):
+        st.write("🎼 サビKey:", target["chorus_key"])
+
     if target.get("chorus_chords_roman"):
-        st.write("🎹 サビ進行:", progression_to_text(target["chorus_chords_roman"]))
+        st.write(
+            "🎹 サビ進行:",
+            progression_to_text(target["chorus_chords_roman"])
+        )
+
+    if target.get("chorus_chords_raw"):
+        st.write("🎸 実コード:", target["chorus_chords_raw"])
+
+    if target.get("comment"):
+        st.write("💬 コメント:", target["comment"])
 
     st.divider()
 
-    # ⭐ 取り込み
-    if st.button("📥 この曲を自分のDBに取り込む"):
-
-        my_index = find_my_song(target["title"], target["artist"])
-
-        new_song = merge_public_into_my_song({
-            "title": target["title"],
-            "artist": target["artist"],
-            "genre": target.get("genre"),
-            "themes": target.get("themes", []),
-            "rating": target.get("rating", 3),
-            "comment": target.get("comment"),
-            "date_added": datetime.now().strftime("%Y-%m-%d"),
-            "key": "",
-            "bpm": "",
-            "vocal_min": "",
-            "vocal_max": "",
-            "modulations": [],
-            "chorus_key": "",
-            "chorus_chords_raw": "",
-            "chorus_chords_roman": [],
-        }, target)
-
-        if my_index is None:
-            data.append(new_song)
-            st.session_state.msg = "取り込みました！"
-        else:
-            data[my_index] = new_song
-            st.session_state.msg = "既存曲を更新しました！"
-
-        save_and_refresh()
-
     if st.button("← 戻る"):
-        del st.session_state.public_detail_id
+        del st.session_state.public_detail_data
         jump_to_menu("🌍 公開曲を見る")
 
 # ======================
@@ -2230,6 +2243,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
