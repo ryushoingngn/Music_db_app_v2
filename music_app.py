@@ -1024,15 +1024,13 @@ def show_music_card(music, index):
 # ======================
 def show_public_song_card(title, artist, versions):
 
-    with st.container(border=True):
-
-        st.markdown(f"### 🎵 {title}")
-        st.markdown(f"**🎤 {artist}**")
+    # 🆕 折りたたみ化
+    with st.expander(f"🎵 {title} - {artist}（{len(versions)}件）", expanded=False):
 
         # 👤 自分の登録状況
         show_my_status_in_card(title, artist)
 
-        # ⭐ ここ追加
+        # 🥇 比較表示
         show_side_by_side_compare(title, artist)
 
         st.divider()
@@ -1055,7 +1053,6 @@ def show_public_song_card(title, artist, versions):
                 if st.button("👍", key=f"like_{v['id']}"):
                     toggle_like(v["id"])
                     st.rerun()
-
 
 # ======================
 # 👤 自分の登録状況表示
@@ -2150,6 +2147,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
