@@ -468,7 +468,41 @@ def search_public_music(artist_query="", title_query="", limit=50):
     rows = c.fetchall()
     conn.close()
 
-    return rows
+    result = []
+
+    for row in rows:
+
+        # 🔥 modulationsをint配列に変換
+        mods = []
+        if row["modulations"]:
+            for x in row["modulations"].split(","):
+                x = x.strip()
+                if x.lstrip("-").isdigit():
+                    mods.append(int(x))
+
+        result.append({
+            "id": row["id"],
+            "username": row["username"],
+            "title": row["title"],
+            "artist": row["artist"],
+            "like_count": row["like_count"],
+            "genre": row["genre"],
+            "themes": row["themes"].split(",") if row["themes"] else [],
+            "rating": row["rating"],
+            "comment": row["comment"],
+            "date_added": row["date_added"],
+            "key": row["key"],
+            "bpm": row["bpm"],
+            "vocal_min": row["vocal_min"],
+            "vocal_max": row["vocal_max"],
+            "modulations": mods,   # ← ここ超重要
+            "chorus_key": row["chorus_key"],
+            "chorus_chords_raw": row["chorus_chords_raw"],
+            "chorus_chords_roman": row["chorus_chords_roman"].split(",")
+                if row["chorus_chords_roman"] else []
+        })
+
+    return result
 
 
 
@@ -1405,9 +1439,11 @@ def show_public_detail_page(_):
             f"{target.get('vocal_min','?')} ～ {target.get('vocal_max','?')}"
         )
 
-    if target.get("modulations"):
+    mods = target.get("modulations") or []
+
+    if isinstance(mods, list) and len(mods) > 0:
         mod_text = ", ".join(
-            [f"{'+' if m>0 else ''}{m}" for m in target["modulations"]]
+            [f"{'+' if int(m)>0 else ''}{int(m)}" for m in mods]
         )
         st.write("🔁 転調:", mod_text)
 
@@ -2259,6 +2295,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
