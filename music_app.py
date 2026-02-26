@@ -1024,13 +1024,27 @@ def show_music_card(music, index):
 # ======================
 def show_public_song_card(title, artist, versions):
 
-    # 🆕 折りたたみ化
-    with st.expander(f"🎵 {title} - {artist}（{len(versions)}件）", expanded=False):
+    # ⭐ 代表公開版（いいね最多）
+    best_version = versions[0]
 
-        # 👤 自分の登録状況
+    status = classify_public_song(best_version)
+
+    icon_map = {
+        "none": "⚪",     # 未登録
+        "partial": "🟡",  # 不足あり
+        "full": "🟢"      # 完全登録
+    }
+
+    icon = icon_map.get(status, "⚪")
+
+    # 🆕 タイトルにアイコン表示
+    with st.expander(
+        f"{icon} 🎵 {title} - {artist}（{len(versions)}件）",
+        expanded=False
+    ):
+
         show_my_status_in_card(title, artist)
 
-        # 🥇 比較表示
         show_side_by_side_compare(title, artist)
 
         st.divider()
@@ -1127,6 +1141,30 @@ def show_side_by_side_compare(title, artist):
         my_song,
         my_index
     )
+
+    # ==========================
+    # ⭐ 不足分一括追加ボタン
+    # ==========================
+    if has_missing_info(my_song, best_version):
+
+        st.divider()
+
+        if st.button("📥 不足分を一括追加する", key=f"bulk_add_{title}_{artist}"):
+
+            fields = [
+                "key", "bpm", "vocal_min", "vocal_max",
+                "chorus_key",
+                "chorus_chords_raw",
+                "chorus_chords_roman",
+                "modulations"
+            ]
+
+            for f in fields:
+                if not my_song.get(f) and best_version.get(f):
+                    data[my_index][f] = best_version.get(f)
+
+            st.session_state.msg = "不足分を一括追加しました！"
+            save_and_refresh()
 
 def edit_form(music, index):
     st.header("✏ 曲を編集")
@@ -2147,6 +2185,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
