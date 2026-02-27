@@ -19,6 +19,18 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
+def db_execute(query, params=None, fetch=False):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(query, params or ())
+
+    if fetch:
+        result = cur.fetchall()
+        return result
+
+    conn.commit()
+
 # ======================
 # 🗄 PostgreSQL初期化
 # ======================
@@ -94,22 +106,21 @@ MULTI_USER_MODE = True
 # ======================
 
 def load_users():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT username, password FROM users")
-    rows = c.fetchall()
+    rows = db_execute(
+        "SELECT username, password FROM users",
+        fetch=True
+    )
     return {r[0]: r[1] for r in rows}
 
 def save_users(users):
-    conn = get_connection()
-    c = conn.cursor()
 
-    c.execute("DELETE FROM users")
+    db_execute("DELETE FROM users")
 
     for u, p in users.items():
-        c.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (u, p))
-
-    conn.commit()
+        db_execute(
+            "INSERT INTO users (username, password) VALUES (%s, %s)",
+            (u, p)
+        )
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -2282,6 +2293,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
