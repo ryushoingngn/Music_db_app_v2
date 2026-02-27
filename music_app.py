@@ -267,13 +267,15 @@ def load_music():
     return result
 
 def save_music(data):
+
     db_execute(
         "DELETE FROM music WHERE username = %s",
         (st.session_state.user,)
     )
 
     for m in data:
-        c.execute("""
+
+        db_execute("""
         INSERT INTO music (
             username,
             title, artist, genre, themes, rating, comment,
@@ -285,7 +287,7 @@ def save_music(data):
             m["title"],
             m["artist"],
             m["genre"],
-            ",".join(m["themes"]),
+            ",".join(m.get("themes", []))
             m["rating"],
             m["comment"],
             m["date_added"],
@@ -298,8 +300,6 @@ def save_music(data):
             m["chorus_chords_raw"],
             ",".join(m["chorus_chords_roman"])
         ))
-
-    conn.commit()
 
 # ⭐ Streamlit用データ管理
 if "music_data" not in st.session_state:
@@ -2261,6 +2261,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
