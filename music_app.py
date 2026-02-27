@@ -36,6 +36,19 @@ def db_execute(query, params=None, fetch=False):
 
     return result
 
+def parse_modulations(mod_string):
+
+    mods = []
+
+    if mod_string:
+        for x in mod_string.split(","):
+            x = x.strip()
+
+            if x.lstrip("-").isdigit():
+                mods.append(int(x))
+
+    return mods
+
 # ======================
 # 🗄 PostgreSQL初期化
 # ======================
@@ -227,13 +240,7 @@ def load_music():
     for row in rows:
 
         # ===== modulations安全変換 =====
-        mods = []
-    
-        if row["modulations"]:
-            for x in row["modulations"].split(","):
-                x = x.strip()
-                if x.lstrip("-").isdigit():
-                    mods.append(int(x))
+        mods = parse_modulations(row["modulations"])
     
         result.append({
             "title": row["title"],
@@ -317,12 +324,7 @@ def load_public_music_all():
 
     for row in rows:
 
-        mods = []
-        if row["modulations"]:
-            for x in row["modulations"].split(","):
-                x = x.strip()
-                if x.lstrip("-").isdigit():
-                    mods.append(int(x))
+        mods = parse_modulations(row["modulations"])
 
         result.append({
             "id": row["id"],
@@ -483,12 +485,7 @@ def search_public_music(artist_query="", title_query="", limit=50):
     for row in rows:
 
         # 🔥 modulationsをint配列に変換
-        mods = []
-        if row["modulations"]:
-            for x in row["modulations"].split(","):
-                x = x.strip()
-                if x.lstrip("-").isdigit():
-                    mods.append(int(x))
+        mods = parse_modulations(row["modulations"])
 
         result.append({
             "id": row["id"],
@@ -2303,6 +2300,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
