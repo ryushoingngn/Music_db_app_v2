@@ -49,6 +49,30 @@ def parse_modulations(mod_string):
 
     return mods
 
+def row_to_music_dict(row):
+
+    return {
+        "id": row.get("id"),
+        "username": row.get("username"),
+        "title": row["title"],
+        "artist": row["artist"],
+        "genre": row["genre"],
+        "themes": row["themes"].split(",") if row["themes"] else [],
+        "rating": row["rating"],
+        "comment": row["comment"],
+        "date_added": row["date_added"],
+        "key": row["key"],
+        "bpm": row["bpm"],
+        "vocal_min": row["vocal_min"],
+        "vocal_max": row["vocal_max"],
+        "modulations": parse_modulations(row["modulations"]),
+        "chorus_key": row["chorus_key"],
+        "chorus_chords_raw": row["chorus_chords_raw"],
+        "chorus_chords_roman":
+            row["chorus_chords_roman"].split(",")
+            if row["chorus_chords_roman"] else []
+    }
+
 # ======================
 # 🗄 PostgreSQL初期化
 # ======================
@@ -238,27 +262,7 @@ def load_music():
 
     result = []
     for row in rows:
-
-        # ===== modulations安全変換 =====
-        mods = parse_modulations(row["modulations"])
-    
-        result.append({
-            "title": row["title"],
-            "artist": row["artist"],
-            "genre": row["genre"],
-            "themes": row["themes"].split(",") if row["themes"] else [],
-            "rating": row["rating"],
-            "comment": row["comment"],
-            "date_added": row["date_added"],
-            "key": row["key"],
-            "bpm": row["bpm"],
-            "vocal_min": row["vocal_min"],
-            "vocal_max": row["vocal_max"],
-            "modulations": mods,   # ← ここ重要
-            "chorus_key": row["chorus_key"],
-            "chorus_chords_raw": row["chorus_chords_raw"],
-            "chorus_chords_roman": row["chorus_chords_roman"].split(",") if row["chorus_chords_roman"] else []
-        })
+        result.append(row_to_music_dict(row))
 
     return result
 
@@ -323,30 +327,9 @@ def load_public_music_all():
     result = []
 
     for row in rows:
-
-        mods = parse_modulations(row["modulations"])
-
-        result.append({
-            "id": row["id"],
-            "username": row["username"],   # ← 誰の投稿か重要
-            "title": row["title"],
-            "artist": row["artist"],
-            "like_count": row["like_count"],
-            "genre": row["genre"],
-            "themes": row["themes"].split(",") if row["themes"] else [],
-            "rating": row["rating"],
-            "comment": row["comment"],
-            "date_added": row["date_added"],
-            "key": row["key"],
-            "bpm": row["bpm"],
-            "vocal_min": row["vocal_min"],
-            "vocal_max": row["vocal_max"],
-            "modulations": mods,
-            "chorus_key": row["chorus_key"],
-            "chorus_chords_raw": row["chorus_chords_raw"],
-            "chorus_chords_roman": row["chorus_chords_roman"].split(",")
-                if row["chorus_chords_roman"] else []
-        })
+        music = row_to_music_dict(row)
+        music["like_count"] = row["like_count"]
+        result.append(music)
 
     return result
 
@@ -483,31 +466,9 @@ def search_public_music(artist_query="", title_query="", limit=50):
     result = []
 
     for row in rows:
-
-        # 🔥 modulationsをint配列に変換
-        mods = parse_modulations(row["modulations"])
-
-        result.append({
-            "id": row["id"],
-            "username": row["username"],
-            "title": row["title"],
-            "artist": row["artist"],
-            "like_count": row["like_count"],
-            "genre": row["genre"],
-            "themes": row["themes"].split(",") if row["themes"] else [],
-            "rating": row["rating"],
-            "comment": row["comment"],
-            "date_added": row["date_added"],
-            "key": row["key"],
-            "bpm": row["bpm"],
-            "vocal_min": row["vocal_min"],
-            "vocal_max": row["vocal_max"],
-            "modulations": mods,   # ← ここ超重要
-            "chorus_key": row["chorus_key"],
-            "chorus_chords_raw": row["chorus_chords_raw"],
-            "chorus_chords_roman": row["chorus_chords_roman"].split(",")
-                if row["chorus_chords_roman"] else []
-        })
+        music = row_to_music_dict(row)
+        music["like_count"] = row["like_count"]
+        result.append(music)
 
     return result
 
@@ -2300,6 +2261,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
