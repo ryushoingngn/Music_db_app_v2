@@ -2,6 +2,8 @@ import streamlit as st
 import os
 import psycopg2
 import random
+import hashlib
+import re
 from datetime import datetime
 from psycopg2.extras import RealDictCursor
 
@@ -13,11 +15,12 @@ st.set_page_config(
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+@st.cache_resource
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
 # ======================
-# 🗄 SQLite初期化
+# 🗄 PostgreSQL初期化
 # ======================
 
 def init_db():
@@ -83,7 +86,7 @@ init_db()
 MULTI_USER_MODE = True
 
 
-import hashlib
+
 
 
 
@@ -659,7 +662,7 @@ NOTE_MAP = {
     "B":11
 }
 
-import re
+
 
 # ======================
 # 🎹 Keyバリデーション（複数・♯♭対応版）
@@ -2168,11 +2171,6 @@ elif menu == "検索":
 
         for m in results:
             index = data.index(m)
-            label = (
-                f"🎵 {m['title']} - {m['artist']}  "
-                f"Key:{m.get('key','-')} BPM:{m.get('bpm','-')} "
-                f"{'★'*int(m['rating'])}"
-            )
             if st.button(f"🏆 {m['title']} - {m['artist']} {'★'*int(m['rating'])}", key=f"rank_{index}"):
                 save_search_state()  # ⭐追加！！
                 st.session_state.prev_menu = st.session_state.menu
@@ -2295,6 +2293,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
