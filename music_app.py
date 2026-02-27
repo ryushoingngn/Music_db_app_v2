@@ -25,11 +25,17 @@ def db_execute(query, params=None, fetch=False):
 
     cur.execute(query, params or ())
 
+    result = None
+
     if fetch:
         result = cur.fetchall()
-        return result
+    else:
+        conn.commit()
 
-    conn.commit()
+    cur.close()
+    conn.close()
+
+    return result
 
 # ======================
 # 🗄 PostgreSQL初期化
@@ -183,21 +189,21 @@ if MULTI_USER_MODE:
     st.sidebar.write(f"👤 {st.session_state.user}")
 
     # ===== 公開設定 =====
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT is_public FROM users WHERE username = %s", (st.session_state.user,))
-    current_public = c.fetchone()[0]
+    row = db_execute(
+        "SELECT is_public FROM users WHERE username = %s",
+        (st.session_state.user,),
+        fetch=True
+    )
+    
+    current_public = row[0][0]
     
     new_public = st.sidebar.checkbox("公開アカウントにする", value=current_public)
     
     if new_public != current_public:
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute(
+        db_execute(
             "UPDATE users SET is_public = %s WHERE username = %s",
             (new_public, st.session_state.user)
         )
-        conn.commit()
         st.sidebar.success("公開設定を更新しました")
     
     if st.sidebar.button("ログアウト"):
@@ -1010,10 +1016,11 @@ def roman_keyboard(session_key):
 # いいね数取得
 #==================
 def get_like_count(song_id):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM likes WHERE song_id = %s", (song_id,))
-    count = c.fetchone()[0]
+    count = db_execute(
+        "SELECT COUNT(*) FROM likes WHERE song_id=%s",
+        (song_id,),
+        fetch=True
+    )[0][0]
     return count
 
 
@@ -2293,6 +2300,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
