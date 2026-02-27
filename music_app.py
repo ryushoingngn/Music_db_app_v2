@@ -287,7 +287,7 @@ def save_music(data):
             m["title"],
             m["artist"],
             m["genre"],
-            ",".join(m.get("themes", []))
+            ",".join(m.get("themes", [])),
             m["rating"],
             m["comment"],
             m["date_added"],
@@ -2261,6 +2261,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
