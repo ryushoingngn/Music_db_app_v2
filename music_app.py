@@ -273,7 +273,6 @@ def save_music(data):
         ))
 
     conn.commit()
-    conn.close()
 
 # ⭐ Streamlit用データ管理
 if "music_data" not in st.session_state:
@@ -2283,6 +2282,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
