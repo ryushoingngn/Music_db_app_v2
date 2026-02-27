@@ -20,20 +20,19 @@ def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
 def db_execute(query, params=None, fetch=False):
+
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute(query, params or ())
 
-    result = None
-
     if fetch:
         result = cur.fetchall()
     else:
         conn.commit()
+        result = None
 
     cur.close()
-    conn.close()
 
     return result
 
@@ -2304,6 +2303,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
