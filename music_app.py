@@ -257,10 +257,10 @@ def load_music():
     return result
 
 def save_music(data):
-    conn = get_connection()
-    c = conn.cursor()
-
-    c.execute("DELETE FROM music WHERE username = %s", (st.session_state.user,))
+    db_execute(
+        "DELETE FROM music WHERE username = %s",
+        (st.session_state.user,)
+    )
 
     for m in data:
         c.execute("""
@@ -1016,41 +1016,45 @@ def roman_keyboard(session_key):
 # いいね数取得
 #==================
 def get_like_count(song_id):
-    count = db_execute(
-        "SELECT COUNT(*) FROM likes WHERE song_id=%s",
+
+    result = db_execute(
+        "SELECT COUNT(*) FROM likes WHERE song_id = %s",
         (song_id,),
         fetch=True
-    )[0][0]
-    return count
+    )
 
+    return result[0][0]
 
 #==================
 # いいね切り替え
 #==================
 def toggle_like(song_id):
-    conn = get_connection()
-    c = conn.cursor()
 
-    # 既にいいねしているか確認
-    c.execute("""
+    exists = db_execute(
+        """
         SELECT 1 FROM likes
         WHERE song_id = %s AND username = %s
-    """, (song_id, st.session_state.user))
-
-    exists = c.fetchone()
+        """,
+        (song_id, st.session_state.user),
+        fetch=True
+    )
 
     if exists:
-        c.execute("""
+        db_execute(
+            """
             DELETE FROM likes
             WHERE song_id = %s AND username = %s
-        """, (song_id, st.session_state.user))
+            """,
+            (song_id, st.session_state.user)
+        )
     else:
-        c.execute("""
+        db_execute(
+            """
             INSERT INTO likes (song_id, username)
             VALUES (%s, %s)
-        """, (song_id, st.session_state.user))
-
-    conn.commit()
+            """,
+            (song_id, st.session_state.user)
+        )
 
 # ======================
 # ⭐ 通知メッセージ管理（追加）
@@ -2300,6 +2304,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
