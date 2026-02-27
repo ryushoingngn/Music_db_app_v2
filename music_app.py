@@ -76,7 +76,6 @@ def init_db():
     c.execute("CREATE INDEX IF NOT EXISTS idx_music_user ON music(username)")
 
     conn.commit()
-    conn.close()
 
 init_db()
 
@@ -99,7 +98,6 @@ def load_users():
     c = conn.cursor()
     c.execute("SELECT username, password FROM users")
     rows = c.fetchall()
-    conn.close()
     return {r[0]: r[1] for r in rows}
 
 def save_users(users):
@@ -112,7 +110,6 @@ def save_users(users):
         c.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (u, p))
 
     conn.commit()
-    conn.close()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -179,7 +176,6 @@ if MULTI_USER_MODE:
     c = conn.cursor()
     c.execute("SELECT is_public FROM users WHERE username = %s", (st.session_state.user,))
     current_public = c.fetchone()[0]
-    conn.close()
     
     new_public = st.sidebar.checkbox("公開アカウントにする", value=current_public)
     
@@ -191,7 +187,6 @@ if MULTI_USER_MODE:
             (new_public, st.session_state.user)
         )
         conn.commit()
-        conn.close()
         st.sidebar.success("公開設定を更新しました")
     
     if st.sidebar.button("ログアウト"):
@@ -211,7 +206,6 @@ def load_music():
 
     c.execute("SELECT * FROM music WHERE username = %s", (st.session_state.user,))
     rows = c.fetchall()
-    conn.close()
 
     result = []
     for row in rows:
@@ -303,7 +297,6 @@ def load_public_music_all():
     """, (st.session_state.user,))
 
     rows = c.fetchall()
-    conn.close()
 
     result = []
 
@@ -469,7 +462,6 @@ def search_public_music(artist_query="", title_query="", limit=50):
 
     c.execute(query, tuple(params))
     rows = c.fetchall()
-    conn.close()
 
     result = []
 
@@ -1012,7 +1004,6 @@ def get_like_count(song_id):
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM likes WHERE song_id = %s", (song_id,))
     count = c.fetchone()[0]
-    conn.close()
     return count
 
 
@@ -1043,7 +1034,6 @@ def toggle_like(song_id):
         """, (song_id, st.session_state.user))
 
     conn.commit()
-    conn.close()
 
 # ======================
 # ⭐ 通知メッセージ管理（追加）
@@ -2293,6 +2283,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
