@@ -73,31 +73,6 @@ def row_to_music_dict(row):
             if row["chorus_chords_roman"] else []
     }
 
-def render_song_card(song, show_user=False):
-
-    st.markdown(f"### 🎵 {song['title']}")
-    st.markdown(f"🎤 {song['artist']}")
-
-    if show_user and song.get("username"):
-        st.caption(f"👤 {song['username']}")
-
-    col1, col2 = st.columns([4,1])
-
-    with col1:
-        if "like_count" in song:
-            st.write(f"👍 {song['like_count']}")
-
-    with col2:
-        if st.button("詳細", key=f"detail_{song.get('id', song['title'])}"):
-
-            st.write("ジャンル:", song["genre"])
-            st.write("テーマ:", ", ".join(song["themes"]))
-            st.write("評価:", song["rating"])
-            st.write("コメント:", song["comment"])
-            st.write("キー:", song["key"])
-            st.write("BPM:", song["bpm"])
-            st.write("サビキー:", song["chorus_key"])
-
 # ======================
 # 🗄 PostgreSQL初期化
 # ======================
@@ -1617,7 +1592,7 @@ if menu == "🏠 ホーム":
 
     for m in sorted_by_date[:5]:
         index = data.index(m)
-        if render_song_button(m, "home", index):
+        if st.button(f"🎵 {m['title']} - {m['artist']} {'★'*int(m['rating'])}", key=f"home_{index}"):
             st.session_state.prev_menu = st.session_state.menu
             st.session_state.detail_index = index
             st.rerun()
@@ -1789,7 +1764,7 @@ elif menu == "アーティスト一覧":
 
     for m in artist_songs:
         index = data.index(m)
-        if render_song_button(m, "artist", index):
+        if st.button(f"🎵 {m['title']} {'★'*int(m['rating'])}", key=f"artist_{index}"):
             save_artist_state()   # ⭐追加
             st.session_state.prev_menu = st.session_state.menu
             st.session_state.detail_index = index
@@ -1825,7 +1800,7 @@ elif menu == "ジャンル一覧":
 
     for m in genre_songs:
         index = data.index(m)
-        if render_song_button(m, "genre", index):
+        if st.button(f"🎵 {m['title']} {'★'*int(m['rating'])}", key=f"genre_{index}"):
 
             save_genre_state()  # ⭐状態保存
             st.session_state.prev_menu = st.session_state.menu
@@ -2192,7 +2167,7 @@ elif menu == "年別まとめ":
         songs = year_dict[year]
         for m in songs:
             index = data.index(m)
-            if render_song_button(m, f"year_{year}", index):
+            if st.button(f"🎵 {m['title']} - {m['artist']} {'★'*int(m['rating'])}", key=f"year_{year}_{index}"):
                 st.session_state.prev_menu = st.session_state.menu
                 st.session_state.detail_index = index
                 st.rerun()
@@ -2286,44 +2261,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
