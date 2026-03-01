@@ -145,16 +145,6 @@ def load_users():
     )
     return {r[0]: r[1] for r in rows}
 
-def save_users(users):
-
-    db_execute("DELETE FROM users")
-
-    for u, p in users.items():
-        db_execute(
-            "INSERT INTO users (username, password) VALUES (%s, %s)",
-            (u, p)
-        )
-
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -199,14 +189,31 @@ if st.session_state.user is None:
         new_pass = st.text_input("新しいパスワード", type="password")
 
         if st.button("登録"):
-            if new_user in users:
-                st.error("そのユーザー名は既に使われています")
-            elif new_user and new_pass:
-                users[new_user] = hash_password(new_pass)
-                save_users(users)
-                st.success("登録成功！ログインしてください")
-            else:
-                st.error("入力してください")
+            if username and password:
+                try:
+                    db_execute(
+                        """
+                        INSERT INTO users (username, password)
+                        VALUES (%s, %s)
+                        ON CONFLICT (username) DO NOTHING
+                        """,
+                        (username, password)
+                    )
+        
+                    # 登録できたか確認
+                    result = db_execute(
+                        "SELECT username FROM users WHERE username = %s",
+                        (username,),
+                        fetch=True
+                    )
+        
+                    if result:
+                        st.success("登録成功！")
+                    else:
+                        st.error("そのユーザー名は既に存在します")
+        
+                except Exception as e:
+                    st.error(f"エラーが発生しました: {e}")
 
     st.stop()
 
@@ -2232,5 +2239,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
