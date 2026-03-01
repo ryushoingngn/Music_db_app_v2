@@ -49,6 +49,7 @@ def parse_modulations(mod_string):
 
     return mods
 
+
 def row_to_music_dict(row):
 
     return {
@@ -134,16 +135,6 @@ def init_db():
 init_db()
 
 # ======================
-# 🔐 モード切替
-# ======================
-MULTI_USER_MODE = True
-
-
-
-
-
-
-# ======================
 # 🔐 ユーザー管理
 # ======================
 
@@ -172,81 +163,79 @@ def hash_password(password):
 # 🔐 マルチユーザーモード処理
 # ======================
 
-if MULTI_USER_MODE:
+if "user" not in st.session_state:
+    st.session_state.user = None
 
-    if "user" not in st.session_state:
-        st.session_state.user = None
+users = load_users()
 
-    users = load_users()
+# ---------- 未ログイン ----------
+if st.session_state.user is None:
 
-    # ---------- 未ログイン ----------
-    if st.session_state.user is None:
+    st.title("🔐 ログイン / 新規登録")
 
-        st.title("🔐 ログイン / 新規登録")
+    tab1, tab2 = st.tabs(["ログイン", "新規登録"])
 
-        tab1, tab2 = st.tabs(["ログイン", "新規登録"])
+    # ---- ログイン ----
+    with tab1:
+        login_user = st.text_input("ユーザー名")
+        login_pass = st.text_input("パスワード", type="password")
 
-        # ---- ログイン ----
-        with tab1:
-            login_user = st.text_input("ユーザー名")
-            login_pass = st.text_input("パスワード", type="password")
-
-            if st.button("ログイン"):
-                if login_user in users:
-                    if users[login_user] == hash_password(login_pass):
-                        st.session_state.user = login_user
-                        if "music_data" in st.session_state:
-                            del st.session_state.music_data
-                        st.success("ログイン成功！")
-                        st.rerun()
-                    else:
-                        st.error("パスワードが違います")
+        if st.button("ログイン"):
+            if login_user in users:
+                if users[login_user] == hash_password(login_pass):
+                    st.session_state.user = login_user
+                    if "music_data" in st.session_state:
+                        del st.session_state.music_data
+                    st.success("ログイン成功！")
+                    st.rerun()
                 else:
-                    st.error("ユーザーが存在しません")
+                    st.error("パスワードが違います")
+            else:
+                st.error("ユーザーが存在しません")
 
-        # ---- 新規登録 ----
-        with tab2:
-            new_user = st.text_input("新しいユーザー名")
-            new_pass = st.text_input("新しいパスワード", type="password")
+    # ---- 新規登録 ----
+    with tab2:
+        new_user = st.text_input("新しいユーザー名")
+        new_pass = st.text_input("新しいパスワード", type="password")
 
-            if st.button("登録"):
-                if new_user in users:
-                    st.error("そのユーザー名は既に使われています")
-                elif new_user and new_pass:
-                    users[new_user] = hash_password(new_pass)
-                    save_users(users)
-                    st.success("登録成功！ログインしてください")
-                else:
-                    st.error("入力してください")
+        if st.button("登録"):
+            if new_user in users:
+                st.error("そのユーザー名は既に使われています")
+            elif new_user and new_pass:
+                users[new_user] = hash_password(new_pass)
+                save_users(users)
+                st.success("登録成功！ログインしてください")
+            else:
+                st.error("入力してください")
 
-        st.stop()
+    st.stop()
 
-    # ---------- ログイン後 ----------
-    st.sidebar.write(f"👤 {st.session_state.user}")
+# ---------- ログイン後 ----------
+st.sidebar.write(f"👤 {st.session_state.user}")
 
-    # ===== 公開設定 =====
-    row = db_execute(
-        "SELECT is_public FROM users WHERE username = %s",
-        (st.session_state.user,),
-        fetch=True
+# ===== 公開設定 =====
+row = db_execute(
+    "SELECT is_public FROM users WHERE username = %s",
+    (st.session_state.user,),
+    fetch=True
+)
+
+current_public = row[0][0]
+
+new_public = st.sidebar.checkbox("公開アカウントにする", value=current_public)
+
+if new_public != current_public:
+    db_execute(
+        "UPDATE users SET is_public = %s WHERE username = %s",
+        (new_public, st.session_state.user)
     )
-    
-    current_public = row[0][0]
-    
-    new_public = st.sidebar.checkbox("公開アカウントにする", value=current_public)
-    
-    if new_public != current_public:
-        db_execute(
-            "UPDATE users SET is_public = %s WHERE username = %s",
-            (new_public, st.session_state.user)
-        )
-        st.sidebar.success("公開設定を更新しました")
-    
-    if st.sidebar.button("ログアウト"):
-        st.session_state.user = None
-        if "music_data" in st.session_state:
-            del st.session_state.music_data
-        st.rerun()
+    st.sidebar.success("公開設定を更新しました")
+
+if st.sidebar.button("ログアウト"):
+    st.session_state.user = None
+    if "music_data" in st.session_state:
+        del st.session_state.music_data
+    st.rerun()
 
 
 
@@ -885,24 +874,6 @@ def validate_song_input(
 
     return errors
     
-#==============
-# 分析計だけコピー
-#==============
-def merge_public_into_my_song(my_song, public_song):
-
-    # 上書きする情報
-    fields_to_copy = [
-        "key", "bpm", "vocal_min", "vocal_max",
-        "modulations",
-        "chorus_key",
-        "chorus_chords_raw",
-        "chorus_chords_roman"
-    ]
-
-    for f in fields_to_copy:
-        my_song[f] = public_song.get(f)
-
-    return my_song
 
 # ======================
 # 🎹 ローマ数字キーボード（2段＋拡張）
@@ -2261,4 +2232,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
