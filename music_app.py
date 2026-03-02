@@ -36,20 +36,6 @@ def db_execute(query, params=None, fetch=False):
 
     return result
 
-def parse_modulations(mod_string):
-
-    mods = []
-
-    if mod_string:
-        for x in mod_string.split(","):
-            x = x.strip()
-
-            if x.lstrip("-").isdigit():
-                mods.append(int(x))
-
-    return mods
-
-
 def row_to_music_dict(row):
 
     return {
@@ -769,7 +755,7 @@ def progression_to_text(prog):
 # 🎼 転調入力 → 配列変換
 # ======================
 def parse_modulations(text):
-    if not text.strip():
+    if not text:
         return []
 
     result = []
@@ -2239,6 +2225,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
