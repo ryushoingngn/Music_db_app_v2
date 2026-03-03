@@ -36,6 +36,20 @@ def db_execute(query, params=None, fetch=False):
 
     return result
 
+def parse_modulations(text):
+    if not text:
+        return []
+
+    result = []
+    parts = text.split(",")
+
+    for p in parts:
+        p = p.strip().replace("+", "")
+        if p.lstrip("-").isdigit():
+            result.append(int(p))
+
+    return result
+
 def row_to_music_dict(row):
 
     return {
@@ -749,24 +763,6 @@ def progression_to_text(prog):
     if not prog:
         return ""
     return " → ".join(prog)
-
-
-# ======================
-# 🎼 転調入力 → 配列変換
-# ======================
-def parse_modulations(text):
-    if not text:
-        return []
-
-    result = []
-    parts = text.split(",")
-
-    for p in parts:
-        p = p.strip().replace("+", "")
-        if p.lstrip("-").isdigit():
-            result.append(int(p))
-
-    return result
 
 # 🎼 転調を12半音に正規化（NEW）
 def normalize_mod(mod):
@@ -2225,6 +2221,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
