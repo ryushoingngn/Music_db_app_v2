@@ -1129,19 +1129,14 @@ def show_public_song_card(title, artist, versions):
             total_like = item["like_count"]
             same_count = item["count"]
 
-            col1, col2 = st.columns([4,1])
+            
+            if st.button(
+                f"Version {i}（{same_count}人登録）",
+                key=f"pub_ver_{title}_{artist}_{i}"
+            ):
+                st.session_state.public_detail_data = v
+                st.rerun()
 
-            with col1:
-                if st.button(
-                    f"Version {i}（{same_count}人登録）",
-                    key=f"pub_ver_{title}_{artist}_{i}"
-                ):
-                    st.session_state.public_detail_data = v
-                    st.rerun()
-
-            with col2:
-                st.markdown(f"❤️ {total_like}")
-                
 # ======================
 # 👤 自分の登録状況表示
 # ======================
@@ -2305,6 +2300,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
