@@ -1215,24 +1215,24 @@ def show_side_by_side_compare(title, artist, best_version):
             st.session_state.msg = "不足分を一括追加しました！"
             save_and_refresh()
 
-        # ===== 完全上書き =====
-        st.divider()
-    
-        if st.button("🔥 公開1位で完全上書きする", key=f"bulk_replace_{title}_{artist}"):
-    
-            fields = [
-                "key", "bpm", "vocal_min", "vocal_max",
-                "chorus_key",
-                "chorus_chords_raw",
-                "chorus_chords_roman",
-                "modulations"
-            ]
-    
-            for f in fields:
-                data[my_index][f] = best_version.get(f)
-    
-            st.session_state.msg = "公開1位の内容で完全上書きしました！"
-            save_and_refresh()
+    # ===== 完全上書き =====
+    st.divider()
+
+    if st.button("🔥 公開1位で完全上書きする", key=f"bulk_replace_{title}_{artist}"):
+
+        fields = [
+            "key", "bpm", "vocal_min", "vocal_max",
+            "chorus_key",
+            "chorus_chords_raw",
+            "chorus_chords_roman",
+            "modulations"
+        ]
+
+        for f in fields:
+            data[my_index][f] = best_version.get(f)
+
+        st.session_state.msg = "公開1位の内容で完全上書きしました！"
+        save_and_refresh()
 
 def edit_form(music, index):
     st.header("✏ 曲を編集")
@@ -2265,6 +2265,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
