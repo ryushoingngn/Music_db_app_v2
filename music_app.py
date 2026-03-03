@@ -1113,6 +1113,33 @@ def show_my_status_in_card(title, artist, best_version):
 
     if my_index is None:
         st.info("👤 あなたはまだこの曲を登録していません")
+    
+        if st.button("📥 この公開曲を自分の曲として登録する",
+                     key=f"copy_public_{title}_{artist}"):
+    
+            new_song = {
+                "title": best_version["title"],
+                "artist": best_version["artist"],
+                "genre": best_version.get("genre"),
+                "themes": best_version.get("themes", []),
+                "rating": 3,  # 初期値（好き度は仮に3）
+                "comment": "",
+                "date_added": datetime.now().strftime("%Y-%m-%d"),
+                "key": best_version.get("key"),
+                "bpm": best_version.get("bpm"),
+                "vocal_min": best_version.get("vocal_min"),
+                "vocal_max": best_version.get("vocal_max"),
+                "modulations": best_version.get("modulations", []),
+                "chorus_key": best_version.get("chorus_key"),
+                "chorus_chords_raw": best_version.get("chorus_chords_raw"),
+                "chorus_chords_roman": best_version.get("chorus_chords_roman", []),
+            }
+    
+            data.append(new_song)
+    
+            st.session_state.msg = "公開曲を自分のデータに登録しました！"
+            save_and_refresh()
+    
         return
 
     my_song = data[my_index]
@@ -1188,6 +1215,25 @@ def show_side_by_side_compare(title, artist, best_version):
                     data[my_index][f] = best_version.get(f)
 
             st.session_state.msg = "不足分を一括追加しました！"
+            save_and_refresh()
+
+        # ===== 完全上書き =====
+        st.divider()
+    
+        if st.button("🔥 公開1位で完全上書きする", key=f"bulk_replace_{title}_{artist}"):
+    
+            fields = [
+                "key", "bpm", "vocal_min", "vocal_max",
+                "chorus_key",
+                "chorus_chords_raw",
+                "chorus_chords_roman",
+                "modulations"
+            ]
+    
+            for f in fields:
+                data[my_index][f] = best_version.get(f)
+    
+            st.session_state.msg = "公開1位の内容で完全上書きしました！"
             save_and_refresh()
 
 def edit_form(music, index):
@@ -2221,6 +2267,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
