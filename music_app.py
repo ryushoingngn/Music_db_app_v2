@@ -1083,6 +1083,9 @@ def show_public_song_card(title, artist, versions):
         # ==========================
         # Version一覧
         # ==========================
+
+        st.divider()
+        
         for i, item in enumerate(grouped_versions, start=1):
 
             v = item["data"]
@@ -2265,6 +2268,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
