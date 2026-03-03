@@ -601,14 +601,51 @@ def compare_list_field(label, field, public_song, my_song, my_index, is_mod=Fals
             st.session_state.msg = f"{label} を更新しました"
             save_and_refresh()
 
+def count_same_version_in_versions(versions, target):
+    """
+    versions の中で、target と情報が完全一致するものの数を数える
+    """
+
+    fields = [
+        "key", "bpm", "vocal_min", "vocal_max",
+        "chorus_key",
+        "chorus_chords_raw",
+        "chorus_chords_roman",
+        "modulations"
+    ]
+
+    count = 0
+
+    for v in versions:
+        same = True
+        for f in fields:
+            if v.get(f) != target.get(f):
+                same = False
+                break
+        if same:
+            count += 1
+
+    return count
 
 # ======================
-# 代表曲を決める関数              
+# 代表曲を決める関数（登録人数順）
 # ======================
 def get_best_public_version_from_versions(versions):
+
     if not versions:
         return None
-    return max(versions, key=lambda x: x["like_count"])
+
+    best_version = None
+    max_count = -1
+
+    for v in versions:
+        user_count = count_same_version_in_versions(versions, v)
+
+        if user_count > max_count:
+            max_count = user_count
+            best_version = v
+
+    return best_version
 
 # ======================
 # 🎤 音名 → 数値変換（音域検索用）
@@ -2268,6 +2305,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
