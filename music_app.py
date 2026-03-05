@@ -447,7 +447,6 @@ def search_public_music(artist_query="", title_query="", limit=50):
 
     query += """
         GROUP BY m.id
-        ORDER BY like_count DESC
         LIMIT %s
     """
 
@@ -2379,6 +2378,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
