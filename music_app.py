@@ -434,7 +434,6 @@ def search_public_music(artist_query="", title_query="", limit=50):
         JOIN users u ON m.username = u.username
         LEFT JOIN likes l ON m.id = l.song_id
         WHERE u.is_public = TRUE
-        AND m.username != %s
     """
 
     params = [st.session_state.user]
@@ -2264,6 +2263,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
