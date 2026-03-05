@@ -313,7 +313,6 @@ def load_public_music_all():
         JOIN users u ON m.username = u.username
         LEFT JOIN likes l ON m.id = l.song_id
         WHERE u.is_public = TRUE
-        AND m.username != %s
         GROUP BY m.id
         ORDER BY m.title, m.artist, like_count DESC
     """, (st.session_state.user,))
@@ -2265,6 +2264,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
