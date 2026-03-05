@@ -1442,6 +1442,33 @@ def show_public_detail_page(_):
     # ======================
     
     my_index = find_my_song(target["title"], target["artist"])
+
+    if my_index is None:
+
+        st.subheader("💾 この曲を保存")
+    
+        if st.button("📥 このVersionを自分の曲として保存"):
+    
+            new_song = {
+                "title": target["title"],
+                "artist": target["artist"],
+                "genre": target.get("genre"),
+                "themes": target.get("themes"),
+                "key": target.get("key"),
+                "bpm": target.get("bpm"),
+                "vocal_min": target.get("vocal_min"),
+                "vocal_max": target.get("vocal_max"),
+                "modulations": target.get("modulations"),
+                "chorus_key": target.get("chorus_key"),
+                "chorus_chords_raw": target.get("chorus_chords_raw"),
+                "chorus_chords_roman": target.get("chorus_chords_roman"),
+                "comment": target.get("comment"),
+            }
+    
+            data.append(new_song)
+    
+            st.session_state.msg = "曲を保存しました！"
+            save_and_refresh()
     
     if my_index is not None:
     
@@ -1490,9 +1517,27 @@ def show_public_detail_page(_):
                         st.session_state.msg = f"{label}を上書きしました"
                         save_and_refresh()
 
-    if has_missing_info(my_song, target):
-
-        if st.button("📥 このVersionの不足分を追加"):
+        if has_missing_info(my_song, target):
+    
+            if st.button("📥 このVersionの不足分を追加"):
+        
+                fields = [
+                    "genre","themes","key","bpm",
+                    "vocal_min","vocal_max",
+                    "chorus_key",
+                    "chorus_chords_raw",
+                    "chorus_chords_roman",
+                    "modulations"
+                ]
+        
+                for f in fields:
+                    if not my_song.get(f) and target.get(f):
+                        data[my_index][f] = target.get(f)
+        
+                st.session_state.msg = "不足分を追加しました"
+                save_and_refresh()
+    
+        if st.button("🔥 このVersionで完全上書き"):
     
             fields = [
                 "genre","themes","key","bpm",
@@ -1502,34 +1547,16 @@ def show_public_detail_page(_):
                 "chorus_chords_roman",
                 "modulations"
             ]
-    
+        
             for f in fields:
-                if not my_song.get(f) and target.get(f):
-                    data[my_index][f] = target.get(f)
-    
-            st.session_state.msg = "不足分を追加しました"
+                data[my_index][f] = target.get(f)
+        
+            st.session_state.msg = "このVersionで完全上書きしました"
             save_and_refresh()
-
-    if st.button("🔥 このVersionで完全上書き"):
-
-        fields = [
-            "genre","themes","key","bpm",
-            "vocal_min","vocal_max",
-            "chorus_key",
-            "chorus_chords_raw",
-            "chorus_chords_roman",
-            "modulations"
-        ]
-    
-        for f in fields:
-            data[my_index][f] = target.get(f)
-    
-        st.session_state.msg = "このVersionで完全上書きしました"
-        save_and_refresh()
-    
-    if st.button("← 戻る"):
-        del st.session_state.public_detail_data
-        jump_to_menu("🌍 公開曲を見る")
+        
+        if st.button("← 戻る"):
+            del st.session_state.public_detail_data
+            jump_to_menu("🌍 公開曲を見る")
 
 # ======================
 # ⭐ メニュー遷移システム（超重要）
@@ -2353,6 +2380,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
