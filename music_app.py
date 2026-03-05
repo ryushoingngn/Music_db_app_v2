@@ -1088,16 +1088,13 @@ def show_public_song_card(title, artist, versions):
 
             col1, col2 = st.columns([4,1])
 
-            with col1:
-                if st.button(
-                    f"Version {i}（{same_count}人登録）",
-                    key=f"pub_ver_{title}_{artist}_{i}"
-                ):
-                    st.session_state.public_detail_data = v
-                    st.rerun()
+            if st.button(
+                f"Version {i}（{same_count}人登録）",
+                key=f"pub_ver_{title}_{artist}_{i}"
+            ):
+                st.session_state.public_detail_data = v
+                st.rerun()
 
-            with col2:
-                st.write(f"👥 {version['count']}人")
                 
 # ======================
 # 👤 自分の登録状況表示
@@ -2381,6 +2378,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
