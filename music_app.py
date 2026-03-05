@@ -1118,7 +1118,7 @@ def show_my_status_in_card(title, artist, best_version):
                 "artist": best_version["artist"],
                 "genre": best_version.get("genre"),
                 "themes": best_version.get("themes", []),
-                "rating": 3,  # 初期値（好き度は仮に3）
+                "rating": 0,  # 初期値（好き度は仮に3）
                 "comment": "",
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
                 "key": best_version.get("key"),
@@ -1454,6 +1454,8 @@ def show_public_detail_page(_):
                 "artist": target["artist"],
                 "genre": target.get("genre"),
                 "themes": target.get("themes"),
+                "rating": 0,  # 初期値（好き度は仮に0）
+                "date_added": datetime.now().strftime("%Y-%m-%d"),
                 "key": target.get("key"),
                 "bpm": target.get("bpm"),
                 "vocal_min": target.get("vocal_min"),
@@ -1462,7 +1464,7 @@ def show_public_detail_page(_):
                 "chorus_key": target.get("chorus_key"),
                 "chorus_chords_raw": target.get("chorus_chords_raw"),
                 "chorus_chords_roman": target.get("chorus_chords_roman"),
-                "comment": target.get("comment"),
+                "comment": "",
             }
     
             data.append(new_song)
@@ -2380,6 +2382,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
