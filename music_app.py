@@ -387,10 +387,9 @@ def group_versions_remove_duplicates(versions):
             unique_map[compare_key]["like_count"] += v["like_count"]
             unique_map[compare_key]["count"] += 1
 
-    # like順で並び替え
     result = sorted(
         unique_map.values(),
-        key=lambda x: x["like_count"],
+        key=lambda x: x["count"],
         reverse=True
     )
 
@@ -1098,7 +1097,7 @@ def show_public_song_card(title, artist, versions):
                     st.rerun()
 
             with col2:
-                st.markdown(f"❤️ {total_like}")
+                st.write(f"👥 {version['count']}人")
                 
 # ======================
 # 👤 自分の登録状況表示
@@ -2382,6 +2381,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
