@@ -1080,20 +1080,21 @@ def show_public_song_card(title, artist, versions):
         # ==========================
         # Version一覧
         # ==========================
-        for i, item in enumerate(grouped_versions, start=1):
-
-            v = item["data"]
-            total_like = item["like_count"]
-            same_count = item["count"]
-
-            col1, col2 = st.columns([4,1])
-
-            if st.button(
-                f"Version {i}（{same_count}人登録）",
-                key=f"pub_ver_{title}_{artist}_{i}"
-            ):
-                st.session_state.public_detail_data = v
-                st.rerun()
+        with st.expander("別バージョン", expanded=False):
+            for i, item in enumerate(grouped_versions, start=1):
+    
+                v = item["data"]
+                total_like = item["like_count"]
+                same_count = item["count"]
+    
+                col1, col2 = st.columns([4,1])
+    
+                if st.button(
+                    f"Version {i}（{same_count}人登録）",
+                    key=f"pub_ver_{title}_{artist}_{i}"
+                ):
+                    st.session_state.public_detail_data = v
+                    st.rerun()
 
                 
 # ======================
@@ -2378,6 +2379,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
