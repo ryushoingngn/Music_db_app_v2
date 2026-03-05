@@ -436,7 +436,7 @@ def search_public_music(artist_query="", title_query="", limit=50):
         WHERE u.is_public = TRUE
     """
 
-    params = [st.session_state.user]
+    params = []
 
     if artist_query:
         query += " AND m.artist ILIKE %s"
@@ -2263,6 +2263,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
