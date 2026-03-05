@@ -2352,7 +2352,6 @@ elif menu == "🌍 公開曲を見る":
     # -----------------------------
     if not st.session_state.public_search_done:
         st.info("検索ボタンを押してください")
-        st.stop()
 
 
     results = st.session_state.public_search_result
@@ -2378,6 +2377,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8501))
 
     st.write("")  # 何もしない（Render用ダミー）
+
 
 
 
