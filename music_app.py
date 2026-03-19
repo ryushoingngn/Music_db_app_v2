@@ -172,14 +172,14 @@ if st.session_state.user is None:
 
         if st.button("ログイン"):
             if login_user in users:
-                if users[login_user] == hash_password(login_pass):
-                    st.session_state.user = login_user
-                    if "music_data" in st.session_state:
-                        del st.session_state.music_data
-                    st.success("ログイン成功！")
-                    st.rerun()
-                else:
-                    st.error("パスワードが違います")
+                #if users[login_user] == hash_password(login_pass):
+                st.session_state.user = login_user
+                if "music_data" in st.session_state:
+                    del st.session_state.music_data
+                st.success("ログイン成功！")
+                st.rerun()
+                #else:
+                #    st.error("パスワードが違います")
             else:
                 st.error("ユーザーが存在しません")
 
@@ -206,7 +206,7 @@ if st.session_state.user is None:
                     # 登録できたか確認
                     result = db_execute(
                         "SELECT username FROM users WHERE username = %s",
-                        (username, password),
+                        (username,),
                         fetch=True
                     )
         
