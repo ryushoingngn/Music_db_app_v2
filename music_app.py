@@ -189,6 +189,7 @@ if st.session_state.user is None:
         new_pass = st.text_input("新しいパスワード", type="password")
 
         username = new_user
+        password = new_pass
         
         if st.button("登録"):
             if username and password:
