@@ -206,7 +206,7 @@ if st.session_state.user is None:
                     # 登録できたか確認
                     result = db_execute(
                         "SELECT username FROM users WHERE username = %s",
-                        (username,),
+                        (username, password),
                         fetch=True
                     )
         
